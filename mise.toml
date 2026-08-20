@@ -1,0 +1,80 @@
+[settings]
+experimental = true
+
+[tools]
+xcodegen = '2.45.3'
+
+[tasks.models]
+description = 'Put the Clips and Title models where the app looks for them'
+run = 'Tools/build-models.py'
+
+[tasks.generate]
+description = 'Generate Clipper.xcodeproj from project.yml'
+run = 'xcodegen generate'
+
+[tasks.xcode]
+description = 'Generate the project and open it in Xcode'
+depends = ['generate']
+run = """
+# The binary rather than `open -a Xcode`, so the project opens in a new
+# instance rather than being handed to one that is already running.
+nohup "$(xcode-select -p)/../MacOS/Xcode" Clipper.xcodeproj >/dev/null 2>&1 &
+echo "📂 Opening Clipper.xcodeproj"
+"""
+
+[tasks.build]
+description = 'Build the app, signed with your certificate when CLIPPER_TEAM_ID is set'
+depends = ['generate']
+run = """
+set -o pipefail
+# Release rather than Debug: the model runs through MLX, and a debug build of
+# it is slow enough to change how the app feels.
+ARGS=(-project Clipper.xcodeproj -scheme Clipper
+      -configuration Release -destination 'platform=macOS,arch=arm64'
+      -derivedDataPath build ARCHS=arm64
+      -skipPackagePluginValidation -skipMacroValidation)
+
+if [ -n "${CLIPPER_TEAM_ID:-}" ]; then
+    echo "🔏 Signing with team $CLIPPER_TEAM_ID"
+    ARGS+=(DEVELOPMENT_TEAM="$CLIPPER_TEAM_ID" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates)
+else
+    echo "🔏 No CLIPPER_TEAM_ID, signing to this machine only"
+fi
+
+xcodebuild "${ARGS[@]}" build | grep -E 'error:|warning:|BUILD' || true
+echo "📦 build/Build/Products/Release/Clipper.app"
+"""
+
+[tasks.run]
+description = 'Build and open the app'
+depends = ['build']
+run = 'open build/Build/Products/Release/Clipper.app'
+
+[tasks.cli]
+description = 'Build the clipper command line tool'
+depends = ['generate']
+run = """
+set -o pipefail
+xcodebuild -project Clipper.xcodeproj -scheme ClipperCLI \
+    -configuration Release -destination 'platform=macOS,arch=arm64' \
+    -derivedDataPath build ARCHS=arm64 \
+    -skipPackagePluginValidation -skipMacroValidation \
+    build | grep -E 'error:|warning:|BUILD' || true
+echo "📦 build/Build/Products/Release/clipper"
+"""
+
+[tasks.test]
+description = 'Run the tests over the shared sources'
+depends = ['generate']
+run = """
+set -o pipefail
+xcodebuild -project Clipper.xcodeproj -scheme ClipperTests \
+    -destination 'platform=macOS,arch=arm64' \
+    -derivedDataPath build ARCHS=arm64 \
+    -skipPackagePluginValidation -skipMacroValidation \
+    test | grep -E 'error:|Test run|Suite .* (passed|failed)|\\*\\* TEST' || true
+"""
+
+[tasks.clean]
+description = 'Remove build products, the generated project, and disk images'
+run = 'rm -rf build dist Clipper.xcodeproj'

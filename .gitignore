@@ -1,0 +1,14 @@
+.DS_Store
+*.xcodeproj/
+App/Info.plist
+build*/
+.build/
+.xcbuild/
+*.profraw
+.swiftpm/
+__pycache__/
+dist/
+mise.local.toml
+AGENTS.md
+Scripts/
+Packages/*/Package.resolved

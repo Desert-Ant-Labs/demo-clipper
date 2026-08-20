@@ -1,0 +1,166 @@
+name: Clipper
+options:
+  bundleIdPrefix: com.desertant
+  createIntermediateGroups: true
+  deploymentTarget:
+    macOS: "26.0"
+
+# Apple Silicon only, which is not a restriction this app adds: MLX runs the
+# card model and has no x86_64 backend, and Voz's Core ML buffers are
+# `Float16`, a type the compiler marks unavailable on x86_64 macOS.
+settings:
+  base:
+    ARCHS: arm64
+    ONLY_ACTIVE_ARCH: "NO"
+
+packages:
+  MLXTrait:
+    path: Packages/MLXTrait
+  DesertAntCore:
+    url: https://github.com/Desert-Ant-Labs/desert-ant-core.git
+    # The same package, same floor, is declared in Packages/MLXTrait/Package.swift
+    # (which adds the MLX trait). Bump both together: SwiftPM resolves the union
+    # while the ranges overlap and fails opaquely when they do not.
+    from: 3.1.0
+  DesertAntSwift:
+    url: https://github.com/Desert-Ant-Labs/desert-ant-swift.git
+    from: 2.1.2
+  ArgumentParser:
+    url: https://github.com/apple/swift-argument-parser.git
+    from: 1.5.0
+
+targets:
+  Clipper:
+    type: application
+    platform: macOS
+    sources:
+      - path: App/Sources
+      - path: App/AppIcon.icon
+    dependencies:
+      # `Title` is behind the core's `MLX` package trait, which an Xcode
+      # project cannot declare. `MLXTrait` is a local manifest that does.
+      - package: MLXTrait
+        product: MLXTrait
+      - package: DesertAntCore
+        product: Clips
+      - package: DesertAntCore
+        product: Title
+      - package: DesertAntCore
+        product: Transcript
+      - package: DesertAntCore
+        product: Voz
+      - package: DesertAntSwift
+        product: DesertAntUI
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Clipper
+        NSHumanReadableCopyright: © 2026 Desert Ant Labs B.V. MIT licensed. The Clips model is licensed separately.
+        CFBundleShortVersionString: "1.0"
+        CFBundleVersion: "1"
+        LSMinimumSystemVersion: "26.0"
+        LSApplicationCategoryType: public.app-category.utilities
+        NSNetworkVolumesUsageDescription: Clipper reads videos, and any clip model you point it at, from wherever you keep them.
+        NSRemovableVolumesUsageDescription: Clipper reads videos, and any clip model you point it at, from wherever you keep them.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Video
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes:
+              - public.movie
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.desertant.clipper
+        PRODUCT_NAME: Clipper
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: "YES"
+        ENABLE_HARDENED_RUNTIME: "YES"
+        COMBINE_HIDPI_IMAGES: "YES"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+
+  # The second front end over the same code. `App/Sources/Clipping` is
+  # everything that is neither SwiftUI nor argument parsing.
+  #
+  # Named apart from the `Clipper` app target on purpose: Xcode derives scheme
+  # file names from target names, and two that differ only in case overwrite
+  # each other on a case-insensitive filesystem. The built binary is `clipper`.
+  ClipperCLI:
+    type: tool
+    platform: macOS
+    sources:
+      - path: CLI
+      - path: App/Sources/Clipping
+    dependencies:
+      - package: DesertAntCore
+        product: Clips
+      - package: DesertAntCore
+        product: Title
+      - package: DesertAntCore
+        product: Transcript
+      - package: DesertAntCore
+        product: Voz
+      - package: ArgumentParser
+        product: ArgumentParser
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.desertant.clipper.cli
+        PRODUCT_NAME: clipper
+        SWIFT_VERSION: "6.0"
+        CODE_SIGN_STYLE: Automatic
+
+  # Not hosted by the app: everything worth testing is in the shared sources,
+  # and a bundle that loads on its own runs without signing a host first.
+  ClipperTests:
+    type: bundle.unit-test
+    platform: macOS
+    sources:
+      - path: Tests
+      - path: App/Sources/Clipping
+    dependencies:
+      - package: DesertAntCore
+        product: Clips
+      - package: DesertAntCore
+        product: Title
+      - package: DesertAntCore
+        product: Transcript
+      - package: DesertAntCore
+        product: Voz
+    settings:
+      base:
+        MACOSX_DEPLOYMENT_TARGET: "26.0"
+        PRODUCT_BUNDLE_IDENTIFIER: com.desertant.clipper.tests
+        SWIFT_VERSION: "6.0"
+        GENERATE_INFOPLIST_FILE: "YES"
+
+# Declared rather than left to Xcode, which autocreates them on demand and
+# loses them on the next `xcodegen generate`. Run is Release: the card model
+# goes through MLX, and a debug build of it is slow enough to change how the
+# app feels.
+schemes:
+  Clipper:
+    build:
+      targets:
+        Clipper: all
+    run:
+      config: Release
+    test:
+      config: Debug
+      targets: [ClipperTests]
+    archive:
+      config: Release
+  ClipperCLI:
+    build:
+      targets:
+        ClipperCLI: all
+    run:
+      config: Release
+  ClipperTests:
+    build:
+      targets:
+        ClipperTests: all
+    test:
+      config: Debug
+      targets: [ClipperTests]
