@@ -6,6 +6,15 @@ same core.
 
 ![The Clipper app: the clip list, the preview, the transcript and the timeline](docs/clipper.png)
 
+## Download
+
+[Clipper 1.0](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest/download/Clipper-1.0.dmg)
+is a signed and notarized disk image, 12MB. Drag Clipper to Applications and
+open it. macOS 26 or later on Apple Silicon.
+
+The three models come off Hugging Face on first run, 1GB in total, and are
+cached for every run after. Nothing is uploaded and nothing needs an account.
+
 ```
 video ──► audio ──► Voz ──► sentences ──► Clips ──► Title ──► AVFoundation ──► mp4
 ```
