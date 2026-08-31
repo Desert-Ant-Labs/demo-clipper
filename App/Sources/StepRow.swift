@@ -10,36 +10,35 @@ struct StepRow: View {
     /// ready. Two different waits, so the row names which one it is in.
     let phase: String?
     /// How far the fetch has got. Absent while preparing, which reports no
-    /// fraction, so the bar is only ever shown for something it can measure.
+    /// fraction, so only a phase that can be counted shows a percentage.
     let progress: Double?
     let state: State
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                marker
-                    .frame(width: 18)
-                Text(title)
-                    .foregroundStyle(state == .waiting ? .secondary : .primary)
-                Spacer(minLength: 8)
-                if let phase {
-                    // Only a running step gets the ellipsis.
-                    Text(state == .running ? "\(phase)…" : phase)
-                        .foregroundStyle(.secondary)
-                }
-            }
-            if let progress {
-                HStack(spacing: 8) {
-                    ProgressView(value: progress)
-                    Text(progress.formatted(.percent.precision(.fractionLength(0))))
-                        .foregroundStyle(.secondary)
-                        .monospacedDigit()
-                }
-                .padding(.leading, 26)
+        HStack(spacing: 8) {
+            marker
+                .frame(width: 18)
+            Text(title)
+                .foregroundStyle(state == .waiting ? .secondary : .primary)
+            Spacer(minLength: 8)
+            if let label {
+                Text(label)
+                    .foregroundStyle(.secondary)
+                    .monospacedDigit()
             }
         }
         .font(.callout)
         .opacity(state == .waiting ? 0.55 : 1)
+    }
+
+    /// The percentage says a fetch is moving, so the ellipsis is left to a
+    /// phase that counts nothing.
+    private var label: String? {
+        guard let phase else { return nil }
+        if let progress {
+            return "\(phase) \(progress.formatted(.percent.precision(.fractionLength(0))))"
+        }
+        return state == .running ? "\(phase)…" : phase
     }
 
     @ViewBuilder

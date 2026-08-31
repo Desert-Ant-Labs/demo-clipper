@@ -30,7 +30,12 @@ struct DropZone: View {
             Spacer()
 
             VStack(spacing: 6) {
-                Text("Powered by [Voz, Clips and Title](\(About.homepage)), on-device models from Desert Ant Labs.")
+                // The key is built as a String first. Interpolating into the
+                // literal makes the URL a format placeholder rather than part
+                // of the markdown, and the link comes out malformed.
+                Text(LocalizedStringKey(
+                    "Powered by [Voz, Clips and Title](\(About.homepage.absoluteString)), "
+                        + "on-device models from Desert Ant Labs."))
                 Text("Runs entirely on this Mac. Nothing is uploaded.")
             }
             .font(.subheadline)
