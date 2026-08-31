@@ -10,7 +10,22 @@ run = 'Tools/build-models.py'
 
 [tasks.generate]
 description = 'Generate Clipper.xcodeproj from project.yml'
-run = 'xcodegen generate'
+# A literal string: the check below is full of backslashes, and a basic
+# multi-line string would read them as TOML escapes.
+run = '''
+# The core's version floor is declared twice, because an Xcode project cannot
+# declare a package trait and `Packages/MLXTrait` exists to turn on `MLX`.
+# SwiftPM resolves the union of the two ranges and says nothing useful when
+# they stop overlapping, so they are compared here instead.
+PROJECT=$(grep -A5 '^  DesertAntCore:' project.yml | sed -n 's/^ *from: *//p' | head -1)
+TRAIT=$(sed -n 's/.*desert-ant-core\.git", from: "\([^"]*\)".*/\1/p' Packages/MLXTrait/Package.swift)
+if [ "$PROJECT" != "$TRAIT" ]; then
+    echo "The desert-ant-core floor differs: project.yml says $PROJECT, Packages/MLXTrait says $TRAIT."
+    echo "Bump both together, or SwiftPM fails without naming the cause."
+    exit 1
+fi
+xcodegen generate
+'''
 
 [tasks.xcode]
 description = 'Generate the project and open it in Xcode'

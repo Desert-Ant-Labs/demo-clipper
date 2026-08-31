@@ -7,8 +7,7 @@ let package = Package(
     products: [.library(name: "MLXTrait", targets: ["MLXTrait"])],
     dependencies: [
         // The same package, same floor, is declared in project.yml. Bump both
-        // together: SwiftPM resolves the union while the ranges overlap and
-        // fails opaquely when they do not.
+        // together; `mise run generate` refuses to run while they disagree.
         .package(url: "https://github.com/Desert-Ant-Labs/desert-ant-core.git", from: "3.1.0", traits: ["MLX"]),
     ],
     targets: [

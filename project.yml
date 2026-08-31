@@ -19,8 +19,8 @@ packages:
   DesertAntCore:
     url: https://github.com/Desert-Ant-Labs/desert-ant-core.git
     # The same package, same floor, is declared in Packages/MLXTrait/Package.swift
-    # (which adds the MLX trait). Bump both together: SwiftPM resolves the union
-    # while the ranges overlap and fails opaquely when they do not.
+    # (which adds the MLX trait). Bump both together; `mise run generate`
+    # refuses to run while they disagree.
     from: 3.1.0
   DesertAntSwift:
     url: https://github.com/Desert-Ant-Labs/desert-ant-swift.git
