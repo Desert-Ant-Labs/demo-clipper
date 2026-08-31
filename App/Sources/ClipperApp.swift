@@ -4,6 +4,7 @@ import SwiftUI
 @main
 struct ClipperApp: App {
     @State private var warmup = ModelWarmup()
+    @State private var updates = UpdateCheck()
 
     var body: some Scene {
         // One window: the app works on one video at a time, and a second
@@ -13,7 +14,7 @@ struct ClipperApp: App {
         }
         .defaultSize(width: 1240, height: 820)
         .windowResizability(.contentMinSize)
-        .commands { ClipperCommands() }
+        .commands { ClipperCommands(updates: updates) }
 
         Window("About Clipper", id: About.windowID) {
             AboutView()
@@ -28,10 +29,13 @@ struct ClipperApp: App {
             .tint(DA.Color.accent)
             .environment(warmup)
             .task { warmup.warm() }
+            .updateAlert(updates)
     }
 }
 
 private struct ClipperCommands: Commands {
+    let updates: UpdateCheck
+
     @Environment(\.openWindow) private var openWindow
     @FocusedValue(\.clipperModel) private var model
     @FocusedValue(\.inspectorShown) private var inspectorShown
@@ -39,6 +43,11 @@ private struct ClipperCommands: Commands {
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
             Button("About Clipper") { openWindow(id: About.windowID) }
+
+            Button("Check for Updates…") {
+                Task { await updates.check() }
+            }
+            .disabled(updates.isChecking)
         }
 
         CommandGroup(replacing: .newItem) {

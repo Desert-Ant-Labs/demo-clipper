@@ -12,8 +12,18 @@ same core.
 is a signed and notarized disk image, 12MB. Drag Clipper to Applications and
 open it. macOS 26 or later on Apple Silicon.
 
+Homebrew works too, and `brew upgrade` keeps it current after that:
+
+```bash
+brew tap desert-ant-labs/tap
+brew install --cask clipper
+```
+
 The three models come off Hugging Face on first run, 1GB in total, and are
 cached for every run after. Nothing is uploaded and nothing needs an account.
+
+Check for Updates in the Clipper menu reads the latest release tag and links to
+it. Nothing installs itself, and the app reaches the network only when you ask.
 
 ```
 video ──► audio ──► Voz ──► sentences ──► Clips ──► Title ──► AVFoundation ──► mp4

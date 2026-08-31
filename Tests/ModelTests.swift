@@ -62,3 +62,36 @@ struct ModelLocationTests {
                 "the trailing slash is the manifest's directory marker; no file is at that path")
     }
 }
+
+@Suite("Release versions")
+struct UpdateCheckTests {
+    @Test("A tag is compared without its v")
+    func stripsThePrefix() {
+        #expect(UpdateCheck.number(in: "v1.2") == "1.2")
+        #expect(UpdateCheck.number(in: "1.2") == "1.2")
+    }
+
+    @Test("A later release is newer")
+    func findsNewer() {
+        #expect(UpdateCheck.isNewer("1.1", than: "1.0"))
+        #expect(UpdateCheck.isNewer("2.0", than: "1.9"))
+    }
+
+    @Test("The running version and older ones are not")
+    func ignoresCurrentAndOlder() {
+        #expect(!UpdateCheck.isNewer("1.0", than: "1.0"))
+        #expect(!UpdateCheck.isNewer("0.9", than: "1.0"))
+    }
+
+    @Test("Point releases compare by number, so 1.10 follows 1.9")
+    func comparesNumerically() {
+        #expect(UpdateCheck.isNewer("1.10", than: "1.9"))
+        #expect(!UpdateCheck.isNewer("1.9", than: "1.10"))
+    }
+
+    @Test("A version that could not be read offers nothing")
+    func refusesEmpty() {
+        #expect(!UpdateCheck.isNewer("1.1", than: ""))
+        #expect(!UpdateCheck.isNewer("", than: "1.0"))
+    }
+}
