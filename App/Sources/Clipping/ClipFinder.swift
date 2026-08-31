@@ -50,8 +50,14 @@ actor ClipFinder {
     /// Where the models were found, for anything that wants to say so.
     nonisolated let locations: ModelLocations
 
-    init(models: ModelLocations = .resolved) {
+    /// Whether this finder should name its clips at all. Its own flag rather
+    /// than a missing ``ModelLocations/title``, since no directory means fetch
+    /// the weights, and asking for unnamed clips must not start a download.
+    nonisolated let namesClips: Bool
+
+    init(models: ModelLocations = .resolved, namesClips: Bool = true) {
         self.locations = models
+        self.namesClips = namesClips
         self.clips = Clips(directory: models.clips?.path(percentEncoded: false))
     }
 
@@ -59,7 +65,7 @@ actor ClipFinder {
     /// writer that will not load is not fatal: the clips come back unnamed.
     func prepare() async throws {
         try await prepareSelection()
-        try? await prepareTitles()
+        if namesClips { try? await prepareTitles() }
     }
 
     /// Whether the selector's weights are already on this machine, so a
@@ -80,11 +86,23 @@ actor ClipFinder {
         }
     }
 
+    /// Whether the card model's weights are already on this machine.
+    func titlesAreDownloaded() -> Bool {
+        !namesClips || locations.title != nil || TitleModel.isAvailable()
+    }
+
     /// Loads the writer on its own. MLX reads the weights here.
-    func prepareTitles() async throws {
+    ///
+    /// A directory of our own is adopted as it stands. Without one the weights
+    /// come off the Hub into the managed cache, the same fetch `Clips` and
+    /// `Voz` make, so a downloaded build names its clips without being handed
+    /// a model first.
+    func prepareTitles(
+        progress: @Sendable @escaping (Double) -> Void = { _ in }
+    ) async throws {
         guard writer == nil else { return }
-        guard let directory = locations.title else {
-            throw ClipSearchError.modelUnavailable("No card model directory was found.")
+        guard namesClips else {
+            throw ClipSearchError.modelUnavailable("Titles were not asked for.")
         }
         guard Self.metalKernelsArePresent else {
             throw ClipSearchError.modelUnavailable(
@@ -93,11 +111,22 @@ actor ClipFinder {
                     + "own documented limitation. Build with `mise run build` instead, or "
                     + "pass --no-titles to pick clips without naming them.")
         }
-        let missing = ModelLocations.missing(ModelLocations.titleFiles, in: directory)
-        guard missing.isEmpty else {
-            throw ClipSearchError.modelUnavailable(
-                "\(directory.path(percentEncoded: false)) is missing "
-                    + missing.joined(separator: ", ") + ".")
+        let directory: URL
+        if let local = locations.title {
+            let missing = ModelLocations.missing(ModelLocations.titleFiles, in: local)
+            guard missing.isEmpty else {
+                throw ClipSearchError.modelUnavailable(
+                    "\(local.path(percentEncoded: false)) is missing "
+                        + missing.joined(separator: ", ") + ".")
+            }
+            directory = local
+        } else {
+            do {
+                let stored = try await TitleModel.resolve { progress($0.fraction) }
+                directory = URL(filePath: stored.rootPath)
+            } catch {
+                throw ClipSearchError.modelUnavailable(reason(error))
+            }
         }
         do {
             writer = try await Titles(directory: directory)
@@ -106,8 +135,9 @@ actor ClipFinder {
         }
     }
 
-    /// Whether titles are possible at all on this machine.
-    nonisolated var writesTitles: Bool { locations.title != nil }
+    /// Whether this run will name its clips. MLX needs its compiled kernels,
+    /// which a SwiftPM command-line build does not produce.
+    nonisolated var writesTitles: Bool { namesClips && Self.metalKernelsArePresent }
 
     /// Searches for clips, reporting each stage as it finishes.
     ///
@@ -159,6 +189,7 @@ actor ClipFinder {
         report(.selected(clips, seconds: -started.timeIntervalSinceNow))
         guard !clips.isEmpty else { return }
 
+        guard namesClips else { return }
         do {
             try await prepareTitles()
         } catch {

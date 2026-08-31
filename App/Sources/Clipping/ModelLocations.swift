@@ -4,9 +4,8 @@ import Voz
 
 /// Where the models are read from.
 ///
-/// Both are read from disk rather than fetched, so a first run is not a
-/// download. `Titles` has no remote at all: it takes a directory and nothing
-/// else.
+/// A directory found here is read from disk rather than fetched, so a run that
+/// has one does not download.
 ///
 /// Looked for in two places, first hit wins:
 ///
@@ -14,9 +13,9 @@ import Voz
 ///    `CLIPPER_VOZ_MODEL`
 /// 2. ``root``, where `mise run models` puts them
 ///
-/// `nil` for ``clips`` or ``voz`` hands the choice to the SDK's managed
-/// cache, which downloads. `nil` for ``title`` means the clips come back
-/// unnamed.
+/// `nil` for any of the three hands the choice to the managed cache, which
+/// fetches the pinned revision from the Hub. `Titles` itself only takes a
+/// directory, so ``ClipFinder`` resolves `TitleModel` and passes the result.
 struct ModelLocations: Sendable, Equatable {
     /// A directory holding the files in ``clipsFiles``. Those names are the
     /// SDK's, and a directory missing any of them is not adopted.

@@ -80,12 +80,12 @@ final class ModelWarmup {
     }
 
     /// The selector goes first, since a run needs it first. The card model
-    /// reports nothing while MLX reads its weights.
+    /// reports its fetch, then nothing while MLX reads its weights.
     private func warmClipModels() {
         guard modelWork == nil else { return }
-        title = .preparing
         let finder = Models.clipFinder
         modelWork = Task {
+            title = await finder.titlesAreDownloaded() ? .preparing : .downloading(0)
             // A model already on disk goes straight to preparing, so the row
             // does not claim a download that will not happen.
             clips = await finder.selectionIsDownloaded() ? .preparing : .downloading(0)
@@ -109,7 +109,12 @@ final class ModelWarmup {
 
             let titleStarted = Date()
             do {
-                try await finder.prepareTitles()
+                try await finder.prepareTitles { fraction in
+                    Task { @MainActor in
+                        guard self.title.isWorking else { return }
+                        self.title = fraction < 1 ? .downloading(fraction) : .preparing
+                    }
+                }
                 loadSeconds[.title] = -titleStarted.timeIntervalSinceNow
                 title = .ready
             } catch is CancellationError {

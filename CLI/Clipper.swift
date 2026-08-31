@@ -60,7 +60,6 @@ struct Clipper: AsyncParsableCommand {
         if let vozModel { models.voz = URL(filePath: vozModel) }
         if let clipsModel { models.clips = URL(filePath: clipsModel) }
         if let titleModel { models.title = URL(filePath: titleModel) }
-        if noTitles { models.title = nil }
         return models
     }
 
@@ -124,7 +123,7 @@ extension Clipper {
 
     /// Runs both models over a transcript, reporting each stage as it lands.
     private func findClips(in sentences: [Sentence]) async throws -> [Pick] {
-        let finder = ClipFinder(models: models)
+        let finder = ClipFinder(models: models, namesClips: !noTitles)
         Progress.log("Loading Clips" + (finder.writesTitles ? " and the card model" : ""))
 
         var picks: [Pick] = []

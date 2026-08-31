@@ -25,9 +25,12 @@ pins xcodegen.
 git clone https://github.com/Desert-Ant-Labs/demo-clipper.git
 cd demo-clipper
 mise trust && mise install
-mise run models    # the three models, from the Hub
 mise run run       # build Release and open the app
 ```
+
+The three models come off the Hub on first use and are cached, so nothing has
+to be installed first. `mise run models` fetches them ahead of that run, which
+is worth doing before a demo: Title alone is 280MB.
 
 Drop a video on the window, open one with the toolbar button, or pass one to
 the app: `open -a Clipper my-talk.mp4`. Pick a clip to preview the cut, then
@@ -87,8 +90,10 @@ the audio and cutting the file are this app's. Replace `Speech.swift` and
 `Cutting.swift` if you bring your own recognizer or your own editor.
 
 `mise run models` installs all three under `~/Library/Application
-Support/Clipper/Models`. `CLIPPER_CLIPS_MODEL`, `CLIPPER_TITLE_MODEL` and
-`CLIPPER_VOZ_MODEL` point somewhere else.
+Support/Clipper/Models`, and `CLIPPER_CLIPS_MODEL`, `CLIPPER_TITLE_MODEL` and
+`CLIPPER_VOZ_MODEL` point somewhere else. A model with no directory of its own
+resolves through the SDK's managed cache in `~/Library/Caches/desert-ant-models`,
+which downloads the revision the SDK is pinned to.
 
 ## Requirements
 
