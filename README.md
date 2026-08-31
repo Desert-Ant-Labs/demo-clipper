@@ -24,8 +24,9 @@ Or download the [disk image](https://github.com/Desert-Ant-Labs/demo-clipper/rel
 and drag Clipper to Applications. Clipper works on macOS 26 or later on Apple
 Silicon.
 
-The three models come off Hugging Face on first run, 1GB in total, and are
-cached for every run after. Nothing is uploaded and nothing needs an account.
+The three models come off Hugging Face on first run and are cached for every
+run after: Voz is 466MB, Title 280MB, Clips 275MB. Nothing is uploaded and
+nothing needs an account.
 
 Clipper reads the latest release tag at launch and says nothing unless there is
 a newer one. Check for Updates in the Clipper menu runs the same check and

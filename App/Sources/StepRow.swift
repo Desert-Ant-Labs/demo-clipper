@@ -1,8 +1,9 @@
 import SwiftUI
 
 struct StepRow: View {
-    enum State {
+    enum State: Equatable {
         case done, running, waiting
+        case failed(reason: String)
     }
 
     let title: String
@@ -13,18 +14,33 @@ struct StepRow: View {
     /// fraction, so only a phase that can be counted shows a percentage.
     let progress: Double?
     let state: State
+    /// Offered on a failed row. A fetch this size fails on a dropped
+    /// connection often enough that starting it again is the whole fix.
+    var retry: (() -> Void)?
 
     var body: some View {
-        HStack(spacing: 8) {
-            marker
-                .frame(width: 18)
-            Text(title)
-                .foregroundStyle(state == .waiting ? .secondary : .primary)
-            Spacer(minLength: 8)
-            if let label {
-                Text(label)
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 8) {
+                marker
+                    .frame(width: 18)
+                Text(title)
+                    .foregroundStyle(state == .waiting ? .secondary : .primary)
+                Spacer(minLength: 8)
+                if case .failed = state, let retry {
+                    Button("Try again", action: retry)
+                        .buttonStyle(.link)
+                } else if let label {
+                    Text(label)
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+            }
+            if case .failed(let reason) = state {
+                Text(reason)
+                    .font(.caption)
                     .foregroundStyle(.secondary)
-                    .monospacedDigit()
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.leading, 26)
             }
         }
         .font(.callout)
@@ -47,6 +63,7 @@ struct StepRow: View {
         case .done: Image(systemName: "checkmark.circle.fill").foregroundStyle(.tint)
         case .running: ProgressView().controlSize(.small).scaleEffect(0.7)
         case .waiting: Image(systemName: "circle").foregroundStyle(.tertiary)
+        case .failed: Image(systemName: "exclamationmark.circle.fill").foregroundStyle(.secondary)
         }
     }
 }
@@ -69,7 +86,13 @@ struct StepPanel<Content: View>: View {
     StepPanel(width: 320) {
         StepRow(title: "Voz model", phase: "Downloading", progress: 0.42, state: .running)
         StepRow(title: "Clips model", phase: "Preparing", progress: nil, state: .running)
-        StepRow(title: "Title model", phase: nil, progress: nil, state: .waiting)
+        StepRow(
+            title: "Title model",
+            phase: nil,
+            progress: nil,
+            state: .failed(reason: "The Internet connection appears to be offline."),
+            retry: {}
+        )
     }
     .padding(40)
 }

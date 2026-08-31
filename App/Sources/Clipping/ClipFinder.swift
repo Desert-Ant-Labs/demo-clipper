@@ -231,10 +231,9 @@ actor ClipFinder {
                     + missing.joined(separator: ", ")
                     + ". Run `mise run models` to install it."
             }
-        } else {
-            return "No clip model directory was found. Run `mise run models`, "
-                + "or set CLIPPER_CLIPS_MODEL to one."
         }
+        // No directory means the managed cache, so a failure here is the fetch
+        // itself and the error says what went wrong with it.
         return reason(error)
     }
 

@@ -16,7 +16,8 @@ struct WarmupView: View {
                         title: "\(model.rawValue) model",
                         phase: phase(of: model),
                         progress: progress(of: model),
-                        state: state(of: model)
+                        state: state(of: model),
+                        retry: { warmup.retry(model) }
                     )
                 }
             }
@@ -32,7 +33,7 @@ struct WarmupView: View {
         switch warmup.state(of: model) {
         case .ready, .idle: .done
         case .downloading, .preparing: .running
-        case .failed: .waiting
+        case .failed(let reason): .failed(reason: reason)
         }
     }
 
@@ -42,8 +43,7 @@ struct WarmupView: View {
         switch warmup.state(of: model) {
         case .downloading: "Downloading"
         case .preparing: "Preparing"
-        case .failed(let reason): reason
-        case .idle, .ready: nil
+        case .idle, .ready, .failed: nil
         }
     }
 

@@ -53,24 +53,47 @@ final class ModelWarmup {
         }
     }
 
-    /// The models still being got ready, for showing while it happens.
+    /// The models with something still to say: being got ready, or failed and
+    /// waiting to be started again.
     ///
-    /// A failed Title is not pending: clips come back unnamed rather than not
-    /// at all, and the Inspector carries the reason. A failed Voz or Clips
-    /// stays, since there is nothing to open a video with without them.
+    /// A failure holds the warm-up rather than falling through to the drop
+    /// zone. Clips that come back unnamed read as a broken app rather than as
+    /// a model that did not load, and the row is where the reason and the
+    /// retry are.
     var pending: [Model] {
         Model.allCases.filter { model in
             switch state(of: model) {
             case .idle, .ready: false
-            case .downloading, .preparing: true
-            case .failed: model != .title
+            case .downloading, .preparing, .failed: true
             }
+        }
+    }
+
+    /// Starts a failed model over. A fetch this size fails on a dropped
+    /// connection, and the answer to that is the same work again.
+    func retry(_ model: Model) {
+        guard case .failed = state(of: model) else { return }
+        switch model {
+        case .voz:
+            speech = .idle
+            warmSpeech()
+        case .clips:
+            clips = .idle
+            warmClipModels()
+        case .title:
+            // Said before the task starts, so the row does not show a
+            // checkmark in the moment between the two.
+            title = .preparing
+            warmClipModels()
         }
     }
 
     private func warmSpeech() {
         guard speechWork == nil else { return }
-        speechWork = Task { await prepareSpeech() }
+        speechWork = Task {
+            await prepareSpeech()
+            speechWork = nil
+        }
     }
 
     private func prepareSpeech() async {
@@ -95,10 +118,14 @@ final class ModelWarmup {
         guard modelWork == nil else { return }
         let finder = Models.clipFinder
         modelWork = Task {
-            title = await finder.titlesAreDownloaded() ? .preparing : .downloading(0)
+            if title != .ready {
+                title = await finder.titlesAreDownloaded() ? .preparing : .downloading(0)
+            }
             // A model already on disk goes straight to preparing, so the row
             // does not claim a download that will not happen.
-            clips = await finder.selectionIsDownloaded() ? .preparing : .downloading(0)
+            if clips != .ready {
+                clips = await finder.selectionIsDownloaded() ? .preparing : .downloading(0)
+            }
             let selectionStarted = Date()
             do {
                 try await finder.prepareSelection { fraction in
