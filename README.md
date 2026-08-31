@@ -63,7 +63,7 @@ the app: `open -a Clipper my-talk.mp4`. Pick a clip to preview the cut, then
 export that clip or all of them.
 
 The other tasks are `build`, `cli`, `test`, `xcode` (generate and open the
-project), and `clean`.
+project), `package` (build and wrap the app in a disk image), and `clean`.
 
 ## The command line tool
 
@@ -135,6 +135,12 @@ core's `MLX` trait, which an Xcode project cannot declare on its own.
 
 To sign with your own certificate, run `mise set --file mise.local.toml
 CLIPPER_TEAM_ID=XXXXXXXXXX`. Left alone, a build is signed to this machine.
+
+`mise run package` wraps a Release build in a disk image. With a Developer ID
+certificate in your keychain it signs with it, and with
+`NOTARY_PROFILE=<name>` it notarizes and staples too, so the image opens on a
+machine that has never seen it. Without either it still builds, and says which
+of the two it did not do.
 
 ## License
 

@@ -10,5 +10,4 @@ __pycache__/
 dist/
 mise.local.toml
 AGENTS.md
-Scripts/
 Packages/*/Package.resolved

@@ -75,6 +75,10 @@ xcodebuild -project Clipper.xcodeproj -scheme ClipperTests \
     test | grep -E 'error:|Test run|Suite .* (passed|failed)|\\*\\* TEST' || true
 """
 
+[tasks.package]
+description = 'Build the app and wrap it in a disk image for someone else'
+run = 'Scripts/package.sh'
+
 [tasks.clean]
 description = 'Remove build products, the generated project, and disk images'
 run = 'rm -rf build dist Clipper.xcodeproj'
