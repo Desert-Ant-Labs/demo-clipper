@@ -27,8 +27,11 @@ struct StepRow: View {
                     .foregroundStyle(state == .waiting ? .secondary : .primary)
                 Spacer(minLength: 8)
                 if case .failed = state, let retry {
+                    // Borderless rather than `.link`: the same accent text,
+                    // but it stays a button, and a link is what VoiceOver
+                    // announces for `.link` whatever the action does.
                     Button("Try again", action: retry)
-                        .buttonStyle(.link)
+                        .buttonStyle(.borderless)
                 } else if let label {
                     Text(label)
                         .foregroundStyle(.secondary)

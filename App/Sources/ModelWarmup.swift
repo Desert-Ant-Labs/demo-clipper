@@ -157,10 +157,12 @@ final class ModelWarmup {
             } catch is CancellationError {
                 title = .idle
             } catch {
-                // Not fatal. Clips without titles are a worse result, not a
-                // failed one, so this is said once and the app carries on.
                 title = .failed(reason(error))
             }
+            // Cleared by the task that owns it, so a retry can start the same
+            // work again rather than being turned away by a handle that
+            // outlived its run.
+            modelWork = nil
         }
     }
 
