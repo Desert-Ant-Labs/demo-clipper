@@ -8,16 +8,21 @@ same core.
 
 ## Download
 
-[Clipper 1.0](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest/download/Clipper-1.0.dmg)
-is a signed and notarized disk image, 12MB. Drag Clipper to Applications and
-open it. macOS 26 or later on Apple Silicon.
-
-Homebrew works too, and `brew upgrade` keeps it current after that:
+Homebrew is the one to use, because `brew upgrade` moves you to the next
+release:
 
 ```bash
 brew tap desert-ant-labs/tap
 brew install --cask clipper
 ```
+
+Homebrew 6 asks you to approve a tap it has not seen before. Answering that
+prompt covers Clipper, and `brew trust desert-ant-labs/tap` covers anything
+Desert Ant publishes later.
+
+Or take the disk image and drag Clipper to Applications:
+[Clipper 1.0](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest/download/Clipper-1.0.dmg),
+signed and notarized. Either way, macOS 26 or later on Apple Silicon.
 
 The three models come off Hugging Face on first run, 1GB in total, and are
 cached for every run after. Nothing is uploaded and nothing needs an account.
