@@ -13,7 +13,12 @@ struct WorkingView: View {
 
             StepPanel(width: 300) {
                 ForEach(Step.allCases, id: \.self) { step in
-                    StepRow(title: step.title, detail: detail(for: step), state: state(of: step))
+                    StepRow(
+                        title: step.title,
+                        phase: phase(of: step),
+                        progress: progress(of: step),
+                        state: state(of: step)
+                    )
                 }
             }
             .animation(.easeOut(duration: 0.2), value: model.phase)
@@ -27,16 +32,31 @@ struct WorkingView: View {
         return step.rawValue < current.rawValue ? .done : .waiting
     }
 
-    /// A step that cannot count says nothing.
-    private func detail(for step: Step) -> String? {
+    /// Fetching a model and getting it ready are named apart: the first is a
+    /// measured wait and the second counts nothing.
+    private func phase(of step: Step) -> String? {
+        guard state(of: step) == .running else { return nil }
+        return switch model.phase {
+        case .loadingSpeech(let fraction):
+            fraction < 1 ? "Downloading" : "Preparing"
+        case .preparingModels:
+            "Preparing"
+        case .extractingAudio, .transcribing, .selecting,
+             .writingTitles, .idle, .ready, .exporting, .failed:
+            nil
+        }
+    }
+
+    /// A step that cannot count shows no bar.
+    private func progress(of step: Step) -> Double? {
         guard state(of: step) == .running else { return nil }
         return switch model.phase {
         case .extractingAudio(let fraction):
-            fraction > 0 ? "\(Int(fraction * 100))%" : nil
+            fraction > 0 ? fraction : nil
         case .transcribing(let fraction):
-            fraction > 0 ? "\(Int(fraction * 100))%" : nil
+            fraction > 0 ? fraction : nil
         case .loadingSpeech(let fraction):
-            fraction > 0 && fraction < 1 ? "Downloading \(Int(fraction * 100))%" : "Loading Voz"
+            fraction < 1 ? fraction : nil
         case .preparingModels, .selecting,
              .writingTitles, .idle, .ready, .exporting, .failed:
             nil

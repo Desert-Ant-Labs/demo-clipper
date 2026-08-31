@@ -29,6 +29,7 @@ struct ClipperApp: App {
             .tint(DA.Color.accent)
             .environment(warmup)
             .task { warmup.warm() }
+            .task { await updates.checkQuietly() }
             .updateAlert(updates)
     }
 }

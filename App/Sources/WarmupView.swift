@@ -1,8 +1,8 @@
 import DesertAntUI
 import SwiftUI
 
-// A first launch fetches a couple of GB of weights. Offering a drop zone
-// during that only leads to a video sitting in the same queue.
+// A first launch fetches 1GB of weights. Offering a drop zone during that only
+// leads to a video sitting in the same queue.
 struct WarmupView: View {
     @Environment(ModelWarmup.self) private var warmup
 
@@ -13,14 +13,15 @@ struct WarmupView: View {
             StepPanel(width: 320) {
                 ForEach(ModelWarmup.Model.allCases) { model in
                     StepRow(
-                        title: title(for: model),
-                        detail: detail(for: model),
+                        title: "\(model.rawValue) model",
+                        phase: phase(of: model),
+                        progress: progress(of: model),
                         state: state(of: model)
                     )
                 }
             }
             .animation(.easeOut(duration: 0.2), value: warmup.pending)
-            Text("Preparing the models. This happens once.")
+            Text("Fetching the models and getting them ready. This happens once.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }
@@ -37,22 +38,18 @@ struct WarmupView: View {
 
     /// Fetching and getting ready are different waits, and on a machine that
     /// already has the weights only the second one happens.
-    private func title(for model: ModelWarmup.Model) -> String {
+    private func phase(of model: ModelWarmup.Model) -> String? {
         switch warmup.state(of: model) {
-        case .downloading: "Downloading \(model.rawValue) model"
-        case .preparing: "Preparing \(model.rawValue) model"
-        case .idle, .ready, .failed: "\(model.rawValue) model"
+        case .downloading: "Downloading"
+        case .preparing: "Preparing"
+        case .failed(let reason): reason
+        case .idle, .ready: nil
         }
     }
 
-    private func detail(for model: ModelWarmup.Model) -> String? {
-        switch warmup.state(of: model) {
-        case .downloading(let fraction):
-            fraction > 0 ? "\(Int(fraction * 100))%" : nil
-        case .failed(let reason):
-            reason
-        case .idle, .preparing, .ready:
-            nil
-        }
+    /// Only a fetch reports a fraction. Preparing is Core ML compiling for this
+    /// machine and MLX reading weights, neither of which counts anything.
+    private func progress(of model: ModelWarmup.Model) -> Double? {
+        if case .downloading(let fraction) = warmup.state(of: model) { fraction } else { nil }
     }
 }

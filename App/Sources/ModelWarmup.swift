@@ -54,8 +54,18 @@ final class ModelWarmup {
     }
 
     /// The models still being got ready, for showing while it happens.
+    ///
+    /// A failed Title is not pending: clips come back unnamed rather than not
+    /// at all, and the Inspector carries the reason. A failed Voz or Clips
+    /// stays, since there is nothing to open a video with without them.
     var pending: [Model] {
-        Model.allCases.filter { state(of: $0).note(for: $0) != nil }
+        Model.allCases.filter { model in
+            switch state(of: model) {
+            case .idle, .ready: false
+            case .downloading, .preparing: true
+            case .failed: model != .title
+            }
+        }
     }
 
     private func warmSpeech() {
@@ -139,22 +149,6 @@ final class ModelWarmup {
 }
 
 extension ModelWarmup.State {
-    /// What to say about it, or nothing when there is nothing worth saying.
-    func note(for model: ModelWarmup.Model) -> String? {
-        switch self {
-        case .idle, .ready:
-            nil
-        case .downloading(let fraction):
-            fraction > 0
-                ? "Downloading \(model.rawValue) model \(Int(fraction * 100))%"
-                : "Downloading \(model.rawValue) model"
-        case .preparing:
-            "Preparing \(model.rawValue) model"
-        case .failed(let reason):
-            reason
-        }
-    }
-
     var isWorking: Bool {
         switch self {
         case .downloading, .preparing: true

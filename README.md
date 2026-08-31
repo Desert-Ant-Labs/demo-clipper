@@ -22,8 +22,9 @@ brew install --cask clipper
 The three models come off Hugging Face on first run, 1GB in total, and are
 cached for every run after. Nothing is uploaded and nothing needs an account.
 
-Check for Updates in the Clipper menu reads the latest release tag and links to
-it. Nothing installs itself, and the app reaches the network only when you ask.
+Clipper reads the latest release tag at launch and says nothing unless there is
+a newer one. Check for Updates in the Clipper menu runs the same check and
+always answers. Nothing installs itself.
 
 ```
 video ──► audio ──► Voz ──► sentences ──► Clips ──► Title ──► AVFoundation ──► mp4

@@ -6,8 +6,9 @@ import Observation
 /// Reads the latest release tag and links to its page. Nothing is installed,
 /// and nothing arriving over the network is run.
 ///
-/// Asked for rather than automatic: an app whose claim is that a recording
-/// never leaves the device does not reach the network on its own.
+/// The launch check speaks only when there is a newer release. Being told you
+/// are up to date is worth a sheet when you asked and an interruption when you
+/// did not.
 @MainActor
 @Observable
 final class UpdateCheck {
@@ -30,7 +31,17 @@ final class UpdateCheck {
         let htmlUrl: URL
     }
 
+    /// The menu item's check, which always answers.
     func check() async {
+        await check(announcing: true)
+    }
+
+    /// The launch check, silent unless there is something newer to open.
+    func checkQuietly() async {
+        await check(announcing: false)
+    }
+
+    private func check(announcing: Bool) async {
         guard !isChecking else { return }
         isChecking = true
         defer { isChecking = false }
@@ -38,11 +49,13 @@ final class UpdateCheck {
         do {
             let release = try await fetch()
             let latest = Self.number(in: release.tagName)
-            answer = Self.isNewer(latest, than: Self.running)
-                ? .available(version: latest, page: release.htmlUrl)
-                : .current(Self.running)
+            if Self.isNewer(latest, than: Self.running) {
+                answer = .available(version: latest, page: release.htmlUrl)
+            } else if announcing {
+                answer = .current(Self.running)
+            }
         } catch {
-            answer = .failed(error.localizedDescription)
+            if announcing { answer = .failed(error.localizedDescription) }
         }
     }
 

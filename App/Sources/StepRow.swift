@@ -6,21 +6,36 @@ struct StepRow: View {
     }
 
     let title: String
-    let detail: String?
+    /// What is happening to it now: fetching the weights, or getting them
+    /// ready. Two different waits, so the row names which one it is in.
+    let phase: String?
+    /// How far the fetch has got. Absent while preparing, which reports no
+    /// fraction, so the bar is only ever shown for something it can measure.
+    let progress: Double?
     let state: State
 
     var body: some View {
-        HStack(spacing: 8) {
-            marker
-                .frame(width: 18)
-            // Only the running step gets the ellipsis.
-            Text(state == .running ? "\(title)…" : title)
-                .foregroundStyle(state == .waiting ? .secondary : .primary)
-            Spacer(minLength: 8)
-            if let detail {
-                Text(detail)
-                    .foregroundStyle(.secondary)
-                    .monospacedDigit()
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 8) {
+                marker
+                    .frame(width: 18)
+                Text(title)
+                    .foregroundStyle(state == .waiting ? .secondary : .primary)
+                Spacer(minLength: 8)
+                if let phase {
+                    // Only a running step gets the ellipsis.
+                    Text(state == .running ? "\(phase)…" : phase)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            if let progress {
+                HStack(spacing: 8) {
+                    ProgressView(value: progress)
+                    Text(progress.formatted(.percent.precision(.fractionLength(0))))
+                        .foregroundStyle(.secondary)
+                        .monospacedDigit()
+                }
+                .padding(.leading, 26)
             }
         }
         .font(.callout)
@@ -52,9 +67,10 @@ struct StepPanel<Content: View>: View {
 }
 
 #Preview {
-    StepPanel(width: 300) {
-        StepRow(title: "Loading Voz", detail: "Downloading 42%", state: .running)
-        StepRow(title: "Loading Clips", detail: nil, state: .waiting)
+    StepPanel(width: 320) {
+        StepRow(title: "Voz model", phase: "Downloading", progress: 0.42, state: .running)
+        StepRow(title: "Clips model", phase: "Preparing", progress: nil, state: .running)
+        StepRow(title: "Title model", phase: nil, progress: nil, state: .waiting)
     }
     .padding(40)
 }
