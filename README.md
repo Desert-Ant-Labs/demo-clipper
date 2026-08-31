@@ -4,6 +4,8 @@ Generate short clips from a video podcast, meeting recording, or longer
 recording, fully on device. A local macOS app and a command-line tool over the
 same core.
 
+![The Clipper app: the clip list, the preview, the transcript and the timeline](docs/clipper.png)
+
 ```
 video ──► audio ──► Voz ──► sentences ──► Clips ──► Title ──► AVFoundation ──► mp4
 ```
