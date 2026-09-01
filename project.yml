@@ -55,7 +55,7 @@ targets:
       path: App/Info.plist
       properties:
         CFBundleDisplayName: Clipper
-        NSHumanReadableCopyright: © 2026 Desert Ant Labs B.V. MIT licensed. The Clips model is licensed separately.
+        NSHumanReadableCopyright: © 2026 Desert Ant Labs B.V. Clipper is MIT licensed. The models are under the Desert Ant Labs Source-Available License.
         CFBundleShortVersionString: "1.0.3"
         CFBundleVersion: "4"
         LSMinimumSystemVersion: "26.0"
