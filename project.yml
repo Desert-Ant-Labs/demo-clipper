@@ -56,8 +56,8 @@ targets:
       properties:
         CFBundleDisplayName: Clipper
         NSHumanReadableCopyright: © 2026 Desert Ant Labs B.V. Clipper is MIT licensed. The models are under the Desert Ant Labs Source-Available License.
-        CFBundleShortVersionString: "1.0.3"
-        CFBundleVersion: "4"
+        CFBundleShortVersionString: "1.0.4"
+        CFBundleVersion: "5"
         LSMinimumSystemVersion: "26.0"
         LSApplicationCategoryType: public.app-category.utilities
         NSNetworkVolumesUsageDescription: Clipper reads recordings, and any clip model you point it at, from wherever you keep them.
