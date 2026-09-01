@@ -110,21 +110,6 @@ final class ClipperModel {
     var isExporting = false
     private(set) var finished: [ClipFile] = []
 
-    /// One clip and several take different panels: a save panel that asks for
-    /// a name, and one that asks for a folder to put them all in. The save
-    /// panel takes its name from `defaultFilename`, which the several-document
-    /// exporter has no parameter for, so the two are separate presentations
-    /// over the one flag.
-    var isExportingOne: Bool {
-        get { isExporting && finished.count == 1 }
-        set { isExporting = newValue }
-    }
-
-    var isExportingSeveral: Bool {
-        get { isExporting && finished.count > 1 }
-        set { isExporting = newValue }
-    }
-
     /// Why the last export did not finish, for the alert over the clips. An
     /// export that fails leaves the clips it was made from standing, so this
     /// is separate from ``Phase/failed(_:)``, which is a run that produced
@@ -384,11 +369,10 @@ extension ClipperModel {
                     at: folder, withIntermediateDirectories: true
                 )
                 let scratch = folder.appending(path: name)
-                let ranges = pick.ranges(in: sentences)
                 Logger.export.info("clip \(index + 1, privacy: .public) of \(picks.count, privacy: .public)")
-                try await withDeadline(seconds: Cutting.allowance(for: ranges)) {
-                    try await Cutting.write(source, ranges: ranges, to: scratch)
-                }
+                try await Cutting.write(
+                    source, ranges: pick.ranges(in: sentences), to: scratch
+                )
                 written.append(ClipFile(url: scratch, name: name))
             }
 
@@ -409,26 +393,6 @@ extension ClipperModel {
                 Logger.export.error("export failed: \(problem.detail, privacy: .public)")
                 exportProblem = problem
             }
-        }
-    }
-
-    /// Runs `work`, or gives up on it. `Cutting.write` throws when its task is
-    /// cancelled, so a write that gets nowhere reports itself instead of
-    /// leaving a progress line with nothing behind it.
-    @discardableResult
-    private func withDeadline<T: Sendable>(
-        seconds: Int,
-        _ work: @escaping @Sendable () async throws -> T
-    ) async throws -> T {
-        try await withThrowingTaskGroup(of: T.self) { group in
-            group.addTask { try await work() }
-            group.addTask {
-                try await Task.sleep(for: .seconds(seconds))
-                throw CuttingError.stalled(seconds: seconds)
-            }
-            defer { group.cancelAll() }
-            guard let first = try await group.next() else { throw CancellationError() }
-            return first
         }
     }
 }

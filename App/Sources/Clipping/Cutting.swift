@@ -13,6 +13,33 @@ enum Cutting {
     /// unless something was already there.
     @discardableResult
     static func write(_ source: URL, ranges: [TimeRange], to url: URL) async throws -> URL {
+        // A stalled write and a slow one look alike from outside, so the write
+        // is given a deadline and reports itself rather than never returning.
+        try await withDeadline(seconds: allowance(for: ranges)) {
+            try await cut(source, ranges: ranges, to: url)
+        }
+    }
+
+    /// Runs `work`, or gives up on it. The export throws when its task is
+    /// cancelled, so the deadline can sit outside it rather than reaching into
+    /// a session that cannot cross tasks.
+    static func withDeadline<T: Sendable>(
+        seconds: Int,
+        _ work: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await work() }
+            group.addTask {
+                try await Task.sleep(for: .seconds(seconds))
+                throw CuttingError.stalled(seconds: seconds)
+            }
+            defer { group.cancelAll() }
+            guard let first = try await group.next() else { throw CancellationError() }
+            return first
+        }
+    }
+
+    private static func cut(_ source: URL, ranges: [TimeRange], to url: URL) async throws -> URL {
         let asset = AVURLAsset(url: source)
         let needs = await estimate(of: asset, keeping: ranges)
         guard Storage.hasRoom(for: needs) else {

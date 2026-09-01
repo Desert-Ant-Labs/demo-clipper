@@ -62,21 +62,7 @@ struct ContentView: View {
         ) { result in
             if case .success(let url) = result { model.open(url) }
         }
-        .fileExporter(
-            isPresented: $model.isExportingOne,
-            document: model.finished.first,
-            contentType: .mpeg4Movie,
-            defaultFilename: model.finished.first?.name
-        ) { _ in
-            model.finishExporting()
-        }
-        .fileExporter(
-            isPresented: $model.isExportingSeveral,
-            documents: model.finished,
-            contentType: .mpeg4Movie
-        ) { _ in
-            model.finishExporting()
-        }
+        .clipExporter(model)
         .fileExporter(
             isPresented: $model.isExportingTranscript,
             document: model.transcriptFile,

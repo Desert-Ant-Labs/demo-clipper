@@ -122,6 +122,7 @@ targets:
       # Not SwiftUI and not clipping, but the version comparison it does is
       # worth a suite. `UpdateAlert.swift` holds the view and stays out.
       - path: App/Sources/UpdateCheck.swift
+      - path: App/Sources/DiagnosticReport.swift
     dependencies:
       - package: DesertAntCore
         product: Clips
