@@ -37,12 +37,15 @@ final class ModelWarmup {
     private(set) var title = State.idle
 
     private var speechWork: Task<Void, Never>?
-    private var modelWork: Task<Void, Never>?
+    private var clipsWork: Task<Void, Never>?
+    private var titleWork: Task<Void, Never>?
 
-    /// Starts all three. Each model has one build, so each is loaded once.
+    /// Starts all three at once. They come off the Hub independently, so a
+    /// first run fetches them in parallel rather than one behind another.
     func warm() {
         warmSpeech()
-        warmClipModels()
+        warmClips()
+        warmTitle()
     }
 
     func state(of model: Model) -> State {
@@ -74,17 +77,9 @@ final class ModelWarmup {
     func retry(_ model: Model) {
         guard case .failed = state(of: model) else { return }
         switch model {
-        case .voz:
-            speech = .idle
-            warmSpeech()
-        case .clips:
-            clips = .idle
-            warmClipModels()
-        case .title:
-            // Said before the task starts, so the row does not show a
-            // checkmark in the moment between the two.
-            title = .preparing
-            warmClipModels()
+        case .voz: speech = .idle; warmSpeech()
+        case .clips: clips = .idle; warmClips()
+        case .title: title = .idle; warmTitle()
         }
     }
 
@@ -112,39 +107,45 @@ final class ModelWarmup {
         }
     }
 
-    /// The selector goes first, since a run needs it first. The card model
-    /// reports its fetch, then nothing while MLX reads its weights.
-    private func warmClipModels() {
-        guard modelWork == nil else { return }
+    /// Fetches the selector and gets it ready. Its own task, so its download
+    /// runs alongside the others rather than holding them up.
+    private func warmClips() {
+        guard clipsWork == nil else { return }
         let finder = Models.clipFinder
-        modelWork = Task {
-            if title != .ready {
-                title = await finder.titlesAreDownloaded() ? .preparing : .downloading(0)
-            }
-            // A model already on disk goes straight to preparing, so the row
-            // does not claim a download that will not happen.
+        clipsWork = Task {
             if clips != .ready {
                 clips = await finder.selectionIsDownloaded() ? .preparing : .downloading(0)
             }
-            let selectionStarted = Date()
+            let started = Date()
             do {
                 try await finder.prepareSelection { fraction in
-                    // The callback hops onto the main actor, so it can land
-                    // after the load it belongs to finished.
                     Task { @MainActor in
                         guard self.clips.isWorking else { return }
                         self.clips = fraction < 1 ? .downloading(fraction) : .preparing
                     }
                 }
-                loadSeconds[.clips] = -selectionStarted.timeIntervalSinceNow
+                loadSeconds[.clips] = -started.timeIntervalSinceNow
                 clips = .ready
             } catch is CancellationError {
                 clips = .idle
             } catch {
                 clips = .failed(reason(error))
             }
+            clipsWork = nil
+        }
+    }
 
-            let titleStarted = Date()
+    /// Fetches the card model and gets it ready, in parallel with the selector.
+    /// The two used to share a task, so the card model sat at "Downloading 0%"
+    /// until the selector had finished downloading and preparing.
+    private func warmTitle() {
+        guard titleWork == nil else { return }
+        let finder = Models.clipFinder
+        titleWork = Task {
+            if title != .ready {
+                title = await finder.titlesAreDownloaded() ? .preparing : .downloading(0)
+            }
+            let started = Date()
             do {
                 try await finder.prepareTitles { fraction in
                     Task { @MainActor in
@@ -152,17 +153,14 @@ final class ModelWarmup {
                         self.title = fraction < 1 ? .downloading(fraction) : .preparing
                     }
                 }
-                loadSeconds[.title] = -titleStarted.timeIntervalSinceNow
+                loadSeconds[.title] = -started.timeIntervalSinceNow
                 title = .ready
             } catch is CancellationError {
                 title = .idle
             } catch {
                 title = .failed(reason(error))
             }
-            // Cleared by the task that owns it, so a retry can start the same
-            // work again rather than being turned away by a handle that
-            // outlived its run.
-            modelWork = nil
+            titleWork = nil
         }
     }
 
