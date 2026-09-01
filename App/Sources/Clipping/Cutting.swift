@@ -60,9 +60,10 @@ enum Cutting {
             Logger.export.error("unreadable source: \(reason(error), privacy: .public)")
             throw CuttingError.unreadableSource
         }
+        let hasVideo = try await !composition.loadTracks(withMediaType: .video).isEmpty
         guard let session = AVAssetExportSession(
             asset: composition,
-            presetName: AVAssetExportPresetHighestQuality
+            presetName: hasVideo ? AVAssetExportPresetHighestQuality : AVAssetExportPresetAppleM4A
         ) else {
             throw CuttingError.exportUnavailable
         }
@@ -70,7 +71,7 @@ enum Cutting {
         let destination = firstFreeName(from: url)
         Logger.export.info("writing a clip")
         do {
-            try await session.export(to: destination, as: .mp4)
+            try await session.export(to: destination, as: hasVideo ? .mp4 : .m4a)
         } catch is CancellationError {
             // Someone asked for this to stop. Passed on as it is, so a caller
             // can tell being cancelled apart from going wrong.

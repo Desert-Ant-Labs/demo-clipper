@@ -60,14 +60,15 @@ targets:
         CFBundleVersion: "3"
         LSMinimumSystemVersion: "26.0"
         LSApplicationCategoryType: public.app-category.utilities
-        NSNetworkVolumesUsageDescription: Clipper reads videos, and any clip model you point it at, from wherever you keep them.
-        NSRemovableVolumesUsageDescription: Clipper reads videos, and any clip model you point it at, from wherever you keep them.
+        NSNetworkVolumesUsageDescription: Clipper reads recordings, and any clip model you point it at, from wherever you keep them.
+        NSRemovableVolumesUsageDescription: Clipper reads recordings, and any clip model you point it at, from wherever you keep them.
         CFBundleDocumentTypes:
-          - CFBundleTypeName: Video
+          - CFBundleTypeName: Recording
             CFBundleTypeRole: Viewer
             LSHandlerRank: Alternate
             LSItemContentTypes:
               - public.movie
+              - public.audio
     settings:
       base:
         MACOSX_DEPLOYMENT_TARGET: "26.0"

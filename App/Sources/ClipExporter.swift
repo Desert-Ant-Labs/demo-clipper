@@ -20,7 +20,7 @@ private struct ClipExporter: ViewModifier {
             content.fileExporter(
                 isPresented: $model.isExporting,
                 document: only,
-                contentType: .mpeg4Movie,
+                contentType: only.contentType,
                 defaultFilename: only.name
             ) { _ in
                 model.finishExporting()
@@ -29,7 +29,7 @@ private struct ClipExporter: ViewModifier {
             content.fileExporter(
                 isPresented: $model.isExporting,
                 documents: model.finished,
-                contentType: .mpeg4Movie
+                contentType: model.finished.first?.contentType ?? .mpeg4Movie
             ) { _ in
                 model.finishExporting()
             }

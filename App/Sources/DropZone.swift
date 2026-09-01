@@ -10,7 +10,7 @@ struct DropZone: View {
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(.tertiary)
             VStack(spacing: 8) {
-                Text("Drop a video here")
+                Text("Drop a video or recording here")
                     .font(.title3.weight(.medium))
                 Text("Clipper transcribes it, then picks the clips worth posting.")
                     .font(.callout)

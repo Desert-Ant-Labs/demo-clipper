@@ -360,7 +360,10 @@ extension ClipperModel {
                 guard current(run) else { return abandon(written) }
                 phase = .exporting(done: index, total: picks.count)
 
-                let name = pick.fileName(number: index + 1, of: picks.count) + ".mp4"
+                // `source` here is the file being cut; the recording's own
+                // details are the model's `source`.
+                let name = pick.fileName(number: index + 1, of: picks.count)
+                    + "." + (self.source?.clipExtension ?? "mp4")
                 // The unique part is the folder, not the file. A wrapper takes
                 // its name from the URL it was made with, so a uniqued file
                 // name is the name the export lands under.

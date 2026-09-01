@@ -180,11 +180,15 @@ extension Clipper {
         let directory = URL(filePath: output ?? FileManager.default.currentDirectoryPath)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
 
+        // A recording with no picture is written out as audio.
+        let info = try? await SourceInfo.load(from: AVURLAsset(url: source))
+        let type = info?.clipExtension ?? "mp4"
+
         var written: [Pick.ID: URL] = [:]
         for (index, pick) in picks.enumerated() {
             let destination = directory
                 .appending(path: pick.fileName(number: index + 1, of: picks.count))
-                .appendingPathExtension("mp4")
+                .appendingPathExtension(type)
             let file = try await Cutting.write(
                 source, ranges: pick.ranges(in: sentences), to: destination
             )

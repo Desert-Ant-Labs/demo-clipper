@@ -1,3 +1,4 @@
+import AVFoundation
 import Foundation
 import Testing
 import Transcript
@@ -167,5 +168,39 @@ struct MalformedDurationTests {
         let huge = Cutting.allowance(for: [TimeRange(start: 0, end: 1e18)])
         #expect(huge > Cutting.floor)
         #expect(huge <= Int(Int32.max))
+    }
+}
+
+@Suite("Audio sources")
+struct AudioSourceTests {
+    private func info(videoSize: CGSize?) -> SourceInfo {
+        SourceInfo(
+            name: "talk",
+            duration: CMTime(seconds: 60, preferredTimescale: 600),
+            fileSize: 1_000,
+            videoSize: videoSize,
+            frameRate: nil,
+            videoCodec: nil,
+            audioCodec: "aac",
+            sampleRate: 48_000,
+            channels: 2
+        )
+    }
+
+    @Test("A recording with no picture writes its clips as audio")
+    func audioWritesM4A() {
+        let audio = info(videoSize: nil)
+        #expect(!audio.hasVideo)
+        #expect(audio.aspectRatio == nil)
+        #expect(audio.clipExtension == "m4a")
+    }
+
+    @Test("A video still writes mp4, and reports a shape to play it in")
+    func videoWritesMP4() {
+        let video = info(videoSize: CGSize(width: 1920, height: 1080))
+        #expect(video.hasVideo)
+        #expect(video.clipExtension == "mp4")
+        // A shape to play it in, rather than the transport an audio clip gets.
+        #expect(abs((video.aspectRatio ?? 0) - 16.0 / 9.0) < 0.0001)
     }
 }

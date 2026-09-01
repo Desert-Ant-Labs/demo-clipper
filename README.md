@@ -62,6 +62,10 @@ Drop a video on the window, open one with the toolbar button, or pass one to
 the app: `open -a Clipper my-talk.mp4`. Pick a clip to preview the cut, then
 export that clip or all of them.
 
+A recording with no picture works the same way. Clipper picks clips out of what
+is said, so an m4a or a wav is as good a source as a video: the preview is a
+transport rather than a picture, and the clips come out as m4a.
+
 The other tasks are `build`, `cli`, `test`, `xcode` (generate and open the
 project), `package` (build and wrap the app in a disk image), and `clean`.
 

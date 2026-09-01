@@ -23,6 +23,11 @@ struct SourceInfo: Sendable, Equatable {
 
     var hasVideo: Bool { videoSize != nil }
 
+    /// A clip of a recording with no picture is written as audio. An mp4
+    /// holding one audio track plays, but it is not what anyone expects to be
+    /// handed, and nothing will show it a thumbnail.
+    var clipExtension: String { hasVideo ? "mp4" : "m4a" }
+
     static func load(from asset: AVURLAsset) async throws -> SourceInfo {
         let duration = try await asset.load(.duration)
         let video = try await asset.loadTracks(withMediaType: .video).first

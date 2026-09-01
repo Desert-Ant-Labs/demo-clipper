@@ -58,7 +58,7 @@ struct ContentView: View {
         }
         .fileImporter(
             isPresented: $model.isChoosingVideo,
-            allowedContentTypes: [.movie]
+            allowedContentTypes: [.movie, .audio]
         ) { result in
             if case .success(let url) = result { model.open(url) }
         }
@@ -72,7 +72,7 @@ struct ContentView: View {
             model.finishExportingTranscript()
         }
         .dropDestination(for: URL.self) { urls, _ in
-            guard let url = urls.first(where: isVideo) else { return false }
+            guard let url = urls.first(where: canOpen) else { return false }
             model.open(url)
             return true
         }
@@ -147,11 +147,11 @@ struct ContentView: View {
         return "\(clips) created in \(total.formattedSeconds)"
     }
 
-    // Audio would transcribe, but a clip is written out as an mp4 and played
-    // back in a video view, so there would be nothing to see.
-    private func isVideo(_ url: URL) -> Bool {
+    /// Clipper picks clips out of what is said, so a recording with no
+    /// picture is as good a source as one with.
+    private func canOpen(_ url: URL) -> Bool {
         let type = try? url.resourceValues(forKeys: [.contentTypeKey]).contentType
-        return type?.conforms(to: .movie) ?? false
+        return type?.conforms(to: .movie) == true || type?.conforms(to: .audio) == true
     }
 }
 
