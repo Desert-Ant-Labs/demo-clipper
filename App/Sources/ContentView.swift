@@ -62,15 +62,6 @@ struct ContentView: View {
         ) { result in
             if case .success(let url) = result { model.open(url) }
         }
-        .clipExporter(model)
-        .fileExporter(
-            isPresented: $model.isExportingTranscript,
-            document: model.transcriptFile,
-            contentType: .plainText,
-            defaultFilename: model.transcriptFile?.name
-        ) { _ in
-            model.finishExportingTranscript()
-        }
         .dropDestination(for: URL.self) { urls, _ in
             guard let url = urls.first(where: canOpen) else { return false }
             model.open(url)

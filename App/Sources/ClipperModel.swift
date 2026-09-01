@@ -107,7 +107,6 @@ final class ClipperModel {
 
     /// Choosing a file is a presentation in SwiftUI, not a call.
     var isChoosingVideo = false
-    var isExporting = false
     private(set) var finished: [ClipFile] = []
 
     /// Why the last export did not finish, for the alert over the clips. An
@@ -116,9 +115,6 @@ final class ClipperModel {
     /// nothing to show.
     var exportProblem: Problem?
 
-    /// The transcript waiting to be written, and whether its panel is up.
-    var isExportingTranscript = false
-    private(set) var transcriptFile: TranscriptFile?
 
     /// Whether there is a video to close.
     var isOpen: Bool { asset != nil }
@@ -159,7 +155,7 @@ final class ClipperModel {
         titleProblem = nil
     }
 
-    /// Cuts the clips, then offers them to `fileExporter`.
+    /// Cuts the clips, then asks where to save them.
     func export(_ picks: [Pick]) {
         guard let asset, !picks.isEmpty else { return }
         finishExporting()
@@ -169,38 +165,57 @@ final class ClipperModel {
         work = Task { await cut(picks, of: asset.url, run: run) }
     }
 
-    /// Offers the whole transcript, or one clip's, to `fileExporter` as
-    /// SubRip. A clip carries only the sentences it kept, timed against its own
-    /// cut, so the subtitles match what it plays.
+    /// Writes the whole transcript, or one clip's, as SubRip. A clip carries
+    /// only the sentences it kept, timed against its own cut, so the subtitles
+    /// match what it plays.
     func exportTranscript(of pick: Pick? = nil) {
         guard !sentences.isEmpty else { return }
         let stem = (videoName as NSString).deletingPathExtension
+
+        let text: String
+        let name: String
         if let pick, !pick.isWholeRecording {
             let kept = pick.keptSentenceIDs.filter(sentences.indices.contains)
             guard !kept.isEmpty else { return }
-            transcriptFile = TranscriptFile(
-                text: Subtitles.subRip(
-                    of: kept.map { sentences[$0] },
-                    in: pick.ranges(in: sentences)
-                ),
-                name: "\(stem) - \(pick.slug).srt"
-            )
+            text = Subtitles.subRip(of: kept.map { sentences[$0] }, in: pick.ranges(in: sentences))
+            name = "\(stem) - \(pick.slug).srt"
         } else {
-            transcriptFile = TranscriptFile(
-                text: Subtitles.subRip(of: sentences),
-                name: "\(stem).srt"
-            )
+            text = Subtitles.subRip(of: sentences)
+            name = "\(stem).srt"
         }
-        isExportingTranscript = true
+
+        Task { await saveTranscript(text, named: name) }
     }
 
-    func finishExportingTranscript() {
-        transcriptFile = nil
+    private func saveTranscript(_ text: String, named name: String) async {
+        do {
+            _ = try await ClipSaver.save(text: text, named: name, over: NSApp.keyWindow)
+        } catch {
+            exportProblem = Problem(error)
+        }
     }
 
     func finishExporting() {
         discard(finished)
         finished = []
+    }
+
+    /// Asks where the clips go and puts them there.
+    private func put(_ clips: [ClipFile]) async {
+        Logger.export.info("asking where to put \(clips.count, privacy: .public)")
+        do {
+            switch try await ClipSaver.save(clips, over: NSApp.keyWindow) {
+            case .saved(let urls):
+                Logger.export.info("saved \(urls.count, privacy: .public)")
+            case .cancelled:
+                Logger.export.info("cancelled at the panel")
+            }
+        } catch {
+            let problem = Problem(error)
+            Logger.export.error("saving failed: \(problem.detail, privacy: .public)")
+            exportProblem = problem
+        }
+        finishExporting()
     }
 
     /// Drops the work of a run that has been superseded. The phase goes back
@@ -380,10 +395,9 @@ extension ClipperModel {
             }
 
             guard current(run) else { return abandon(written) }
-            Logger.export.info("all \(written.count, privacy: .public) written, asking where to put them")
             finished = written
             phase = .ready
-            isExporting = true
+            await put(written)
         } catch {
             guard current(run) else { return abandon(written) }
             discard(written)
