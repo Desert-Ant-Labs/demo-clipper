@@ -132,6 +132,11 @@ struct ExportNameTests {
         #expect(pick.fileName(number: 1, of: 100) == "001-pricing")
     }
 
+    @Test("One clip on its own carries no number to keep it apart from")
+    func oneClipIsNotNumbered() {
+        #expect(named("Pricing").fileName(number: 1, of: 1) == "pricing")
+    }
+
     @Test("Slugs come off the title, and never come out empty")
     func slugsTheTitle() {
         #expect(named("The Pricing Mistake!").slug == "the-pricing-mistake")

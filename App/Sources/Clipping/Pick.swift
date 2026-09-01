@@ -113,8 +113,10 @@ extension Pick {
     }
 
     /// `03-the-pricing-mistake`, padded so ten sorts after nine. The number is
-    /// what keeps two clips apart, since titles repeat.
+    /// what keeps two clips apart, since titles repeat, so one clip on its own
+    /// goes without it.
     func fileName(number: Int, of total: Int) -> String {
+        guard total > 1 else { return slug }
         let width = max(2, String(total).count)
         return String(format: "%0\(width)d-%@", number, slug)
     }

@@ -1,3 +1,4 @@
+import AppKit
 import DesertAntUI
 import SwiftUI
 
@@ -94,6 +95,15 @@ private struct ClipperCommands: Commands {
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
             .disabled(model?.canExport != true)
+        }
+
+        // A run that hangs reports nothing, so the log has to be reachable
+        // when nothing has gone visibly wrong.
+        CommandGroup(replacing: .help) {
+            Button("Copy Diagnostic Log") {
+                NSPasteboard.general.clearContents()
+                NSPasteboard.general.setString(Diagnostics.report(), forType: .string)
+            }
         }
 
         CommandGroup(after: .toolbar) {

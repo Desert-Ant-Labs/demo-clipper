@@ -7,6 +7,10 @@ extension Logger {
     ///
     ///     log show --predicate 'subsystem == "com.desertant.clipper"' --last 10m
     static let export = Logger(subsystem: Diagnostics.subsystem, category: "export")
+
+    /// A run from the file arriving to the clips being on screen. Separate
+    /// from ``export``, and both land in the report.
+    static let run = Logger(subsystem: Diagnostics.subsystem, category: "run")
 }
 
 /// What to hand someone who is filing an issue: what went wrong, what it was
@@ -19,9 +23,16 @@ enum Diagnostics {
     /// bundle it came out of.
     static let subsystem = Bundle.main.bundleIdentifier ?? "com.desertant.clipper"
 
-    static func report(_ problem: Problem) -> String {
-        ([problem.message, problem.detail] + versions + log())
-            .joined(separator: "\n")
+    /// The most lines worth carrying. A run of a dozen clips logs three lines
+    /// each, and everything before that is still the same session.
+    static let lines = 200
+
+    /// `problem` is absent when nobody asked because something failed: a run
+    /// that hangs reports no error at all, and the log is the only account of
+    /// where it stopped.
+    static func report(_ problem: Problem? = nil) -> String {
+        let head = problem.map { [$0.message, $0.detail] } ?? []
+        return (head + versions + log()).joined(separator: "\n")
     }
 
     /// What it was running on. The OS build and the machine are here because a
@@ -66,10 +77,11 @@ enum Diagnostics {
               )
         else { return [] }
 
-        let lines = entries
+        let found = entries
             .compactMap { $0 as? OSLogEntryLog }
             .filter { $0.subsystem == subsystem }
             .map { "\($0.date.formatted(date: .omitted, time: .standard)) \($0.composedMessage)" }
-        return lines.isEmpty ? [] : [""] + lines
+            .suffix(lines)
+        return found.isEmpty ? ["", "Nothing logged yet."] : [""] + found
     }
 }

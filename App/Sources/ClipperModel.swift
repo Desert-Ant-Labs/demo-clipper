@@ -110,6 +110,21 @@ final class ClipperModel {
     var isExporting = false
     private(set) var finished: [ClipFile] = []
 
+    /// One clip and several take different panels: a save panel that asks for
+    /// a name, and one that asks for a folder to put them all in. The save
+    /// panel takes its name from `defaultFilename`, which the several-document
+    /// exporter has no parameter for, so the two are separate presentations
+    /// over the one flag.
+    var isExportingOne: Bool {
+        get { isExporting && finished.count == 1 }
+        set { isExporting = newValue }
+    }
+
+    var isExportingSeveral: Bool {
+        get { isExporting && finished.count > 1 }
+        set { isExporting = newValue }
+    }
+
     /// Why the last export did not finish, for the alert over the clips. An
     /// export that fails leaves the clips it was made from standing, so this
     /// is separate from ``Phase/failed(_:)``, which is a run that produced
@@ -267,6 +282,8 @@ extension ClipperModel {
         do {
             source = try await SourceInfo.load(from: asset)
             guard current(run) else { return }
+            let seconds = Int(source?.duration.seconds ?? 0)
+            Logger.run.info("opened .\(url.pathExtension, privacy: .public), \(seconds, privacy: .public)s")
 
             phase = .extractingAudio(0)
             let read = try await Models.reader.read(asset) { [weak self] stage in
@@ -276,6 +293,7 @@ extension ClipperModel {
             guard current(run) else { return }
             sentences = read.sentences
             reading = read
+            Logger.run.info("transcribed \(read.sentences.count, privacy: .public) sentences")
 
             let finder = Models.clipFinder
             phase = .preparingModels
@@ -290,12 +308,15 @@ extension ClipperModel {
 
             guard current(run) else { return }
             if selection == nil { selection = picks.first?.id }
+            Logger.run.info("\(self.picks.count, privacy: .public) clips ready")
             phase = picks.isEmpty ? .failed("No clips came back for that video.") : .ready
         } catch {
             guard current(run) else { return }
             if error is CancellationError {
+                Logger.run.info("run cancelled")
                 phase = .idle
             } else if picks.isEmpty {
+                Logger.run.error("run failed: \(Problem(error).detail, privacy: .public)")
                 phase = .failed(reason(error))
             } else {
                 if selection == nil { selection = picks.first?.id }
@@ -346,6 +367,7 @@ extension ClipperModel {
     }
 
     private func cut(_ picks: [Pick], of source: URL, run: Int) async {
+        Logger.export.info("export of \(picks.count, privacy: .public) clip(s) starting")
         var written: [ClipFile] = []
         do {
             for (index, pick) in picks.enumerated() {
@@ -371,6 +393,7 @@ extension ClipperModel {
             }
 
             guard current(run) else { return abandon(written) }
+            Logger.export.info("all \(written.count, privacy: .public) written, asking where to put them")
             finished = written
             phase = .ready
             isExporting = true
