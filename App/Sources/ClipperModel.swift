@@ -2,6 +2,7 @@ import AppKit
 import AVFoundation
 import Foundation
 import Observation
+import OSLog
 import Transcript
 
 /// Drives one video through transcription, clip selection, title writing, and
@@ -109,6 +110,12 @@ final class ClipperModel {
     var isExporting = false
     private(set) var finished: [ClipFile] = []
 
+    /// Why the last export did not finish, for the alert over the clips. An
+    /// export that fails leaves the clips it was made from standing, so this
+    /// is separate from ``Phase/failed(_:)``, which is a run that produced
+    /// nothing to show.
+    var exportProblem: Problem?
+
     /// The transcript waiting to be written, and whether its panel is up.
     var isExportingTranscript = false
     private(set) var transcriptFile: TranscriptFile?
@@ -196,8 +203,19 @@ final class ClipperModel {
         finished = []
     }
 
+    /// Drops the work of a run that has been superseded. The phase goes back
+    /// to ready rather than being left as it was: a superseded export that
+    /// leaves `.exporting` behind spins forever with nothing running.
+    private func abandon(_ files: [ClipFile]) {
+        discard(files)
+        if case .exporting = phase { phase = .ready }
+    }
+
     private func discard(_ files: [ClipFile]) {
-        for file in files { try? FileManager.default.removeItem(at: file.url) }
+        for file in files {
+            // The whole scratch folder, so an abandoned export leaves nothing.
+            try? FileManager.default.removeItem(at: file.url.deletingLastPathComponent())
+        }
     }
 
     func open(_ url: URL) {
@@ -332,26 +350,62 @@ extension ClipperModel {
         do {
             for (index, pick) in picks.enumerated() {
                 try Task.checkCancellation()
-                guard current(run) else { return discard(written) }
+                guard current(run) else { return abandon(written) }
                 phase = .exporting(done: index, total: picks.count)
 
                 let name = pick.fileName(number: index + 1, of: picks.count) + ".mp4"
-                let scratch = URL.temporaryDirectory
-                    .appending(path: "\(UUID().uuidString)-\(name)")
-                try await Cutting.write(
-                    source, ranges: pick.ranges(in: sentences), to: scratch
+                // The unique part is the folder, not the file. A wrapper takes
+                // its name from the URL it was made with, so a uniqued file
+                // name is the name the export lands under.
+                let folder = URL.temporaryDirectory.appending(path: UUID().uuidString)
+                try FileManager.default.createDirectory(
+                    at: folder, withIntermediateDirectories: true
                 )
+                let scratch = folder.appending(path: name)
+                let ranges = pick.ranges(in: sentences)
+                Logger.export.info("clip \(index + 1, privacy: .public) of \(picks.count, privacy: .public)")
+                try await withDeadline(seconds: Cutting.allowance(for: ranges)) {
+                    try await Cutting.write(source, ranges: ranges, to: scratch)
+                }
                 written.append(ClipFile(url: scratch, name: name))
             }
 
-            guard current(run) else { return discard(written) }
+            guard current(run) else { return abandon(written) }
             finished = written
             phase = .ready
             isExporting = true
         } catch {
+            guard current(run) else { return abandon(written) }
             discard(written)
-            guard current(run) else { return }
-            phase = error is CancellationError ? .ready : .failed(reason(error))
+            // The clips are still good; only writing them out went wrong. The
+            // panel stays on screen and says so, rather than the run being
+            // replaced by an error page.
+            phase = .ready
+            if !(error is CancellationError) {
+                let problem = Problem(error)
+                Logger.export.error("export failed: \(problem.detail, privacy: .public)")
+                exportProblem = problem
+            }
+        }
+    }
+
+    /// Runs `work`, or gives up on it. `Cutting.write` throws when its task is
+    /// cancelled, so a write that gets nowhere reports itself instead of
+    /// leaving a progress line with nothing behind it.
+    @discardableResult
+    private func withDeadline<T: Sendable>(
+        seconds: Int,
+        _ work: @escaping @Sendable () async throws -> T
+    ) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask { try await work() }
+            group.addTask {
+                try await Task.sleep(for: .seconds(seconds))
+                throw CuttingError.stalled(seconds: seconds)
+            }
+            defer { group.cancelAll() }
+            guard let first = try await group.next() else { throw CancellationError() }
+            return first
         }
     }
 }

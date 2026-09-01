@@ -38,6 +38,7 @@ struct ContentView: View {
             )
             .inspectorColumnWidth(min: 240, ideal: 320, max: 560)
         }
+        .exportProblemAlert(model)
         .sheet(isPresented: $showsPerformance) {
             if let performance = model.performance {
                 PerformanceSheet(performance: performance)

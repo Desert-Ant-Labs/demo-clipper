@@ -34,8 +34,11 @@ struct Reader: Sendable {
         _ asset: AVURLAsset,
         progress: @escaping @Sendable (Stage) -> Void = { _ in }
     ) async throws -> Reading {
-        guard Storage.hasRoom() else {
-            throw SpeechError.outOfSpace(free: Storage.freeSpaceLabel())
+        let needs = await Self.audioSize(of: asset)
+        guard Storage.hasRoom(for: needs) else {
+            throw SpeechError.outOfSpace(
+                needs: Storage.demand(needs), free: Storage.freeSpaceLabel()
+            )
         }
         // Voz reads an audio file, and a video container is not one.
         let extracting = Date()
@@ -93,9 +96,23 @@ struct Reader: Sendable {
         do {
             try await session.export(to: url, as: .m4a)
         } catch where Storage.isFull(error) {
-            throw SpeechError.outOfSpace(free: Storage.freeSpaceLabel())
+            throw SpeechError.outOfSpace(
+                needs: Storage.demand(await Self.audioSize(of: asset)),
+                free: Storage.freeSpaceLabel()
+            )
         }
         return url
+    }
+
+    /// Roughly what the extracted audio takes: a megabyte a minute, at the
+    /// bitrate the extractor writes.
+    ///
+    /// Best effort. A recording this cannot measure still reaches the reader,
+    /// which has a real sentence for why it could not be read.
+    static func audioSize(of asset: AVURLAsset) async -> Int64 {
+        let seconds = (try? await asset.load(.duration).seconds) ?? 0
+        guard seconds.isFinite, seconds > 0 else { return 0 }
+        return Int64(seconds / 60 * 1_000_000)
     }
 }
 

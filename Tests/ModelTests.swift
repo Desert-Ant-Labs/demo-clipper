@@ -95,3 +95,77 @@ struct UpdateCheckTests {
         #expect(!UpdateCheck.isNewer("", than: "1.0"))
     }
 }
+
+@Suite("Disk space")
+struct StorageTests {
+    @Test("A write asks for its own size plus the headroom")
+    func addsHeadroom() {
+        // A volume that reports nothing counts as room, so these run against
+        // the real temporary directory only for the shape of the arithmetic.
+        #expect(Storage.headroom == 250_000_000)
+    }
+
+    @Test("A volume that will not report its capacity counts as room")
+    func unknownCapacityIsRoom() {
+        // A path on no volume has no capacity to read.
+        let nowhere = URL(filePath: "/dev/null/not-a-volume")
+        #expect(Storage.available(at: nowhere) == nil)
+        #expect(Storage.hasRoom(for: 1_000_000_000_000, at: nowhere))
+    }
+}
+
+@Suite("Export allowance")
+struct AllowanceTests {
+    private func ranges(_ spans: [(Double, Double)]) -> [TimeRange] {
+        spans.map { TimeRange(start: $0.0, end: $0.0 + $0.1) }
+    }
+
+    @Test("A short clip still gets a floor")
+    func floor() {
+        #expect(Cutting.allowance(for: ranges([(0, 2)])) == 120)
+    }
+
+    @Test("A long clip gets time in proportion to itself")
+    func scales() {
+        #expect(Cutting.allowance(for: ranges([(0, 60)])) == 1200)
+        #expect(Cutting.allowance(for: ranges([(0, 30), (100, 30)])) == 1200)
+    }
+
+    @Test("No spans is still a floor rather than zero")
+    func empty() {
+        #expect(Cutting.allowance(for: []) == 120)
+    }
+}
+
+@Suite("Diagnostics")
+struct DiagnosticsTests {
+    @Test("A report names the app, the OS build, and the machine")
+    func versions() {
+        let lines = Diagnostics.versions
+        #expect(lines.count == 3)
+        #expect(lines[0].hasPrefix("Clipper "))
+        #expect(lines[1].hasPrefix("macOS "))
+        // Nothing should read as unknown on a Mac that answers sysctl.
+        #expect(!lines[1].contains("(?)"))
+        #expect(!lines[2].hasPrefix("? "))
+        #expect(lines[2].contains("cores"))
+    }
+}
+
+@Suite("Malformed durations")
+struct MalformedDurationTests {
+    @Test("An allowance is a number even when the spans are not")
+    func allowanceSurvivesNaN() {
+        // `Int(_: Double)` traps on these, and a malformed asset reports them.
+        #expect(Cutting.allowance(for: [TimeRange(start: 0, end: .nan)]) == Cutting.floor)
+        #expect(Cutting.allowance(for: [TimeRange(start: 0, end: .infinity)]) == Cutting.floor)
+        #expect(Cutting.allowance(for: [TimeRange(start: 0, end: -5)]) == Cutting.floor)
+    }
+
+    @Test("A span too long to count still gives a usable allowance")
+    func allowanceIsBounded() {
+        let huge = Cutting.allowance(for: [TimeRange(start: 0, end: 1e18)])
+        #expect(huge > Cutting.floor)
+        #expect(huge <= Int(Int32.max))
+    }
+}
