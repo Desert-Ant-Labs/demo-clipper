@@ -53,7 +53,7 @@ TITLE_REPO = "desert-ant-labs/title"
 #: different weights than the SDK declares is a bug that looks like a model
 #: regression.
 REVISION = "v0.1.0"
-VOZ_REVISION = "v0.1.0"
+VOZ_REVISION = "v0.3.0"
 TITLE_REVISION = "v0.1.0"
 CORE = Path(__file__).resolve().parent.parent.parent / "desert-ant-core"
 
