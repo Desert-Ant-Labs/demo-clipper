@@ -16,9 +16,9 @@ brew tap desert-ant-labs/tap
 brew install --cask clipper
 ```
 
-Homebrew 6 asks you to approve a tap it has not seen before. Answering that
-prompt covers Clipper, and `brew trust desert-ant-labs/tap` covers anything
-Desert Ant publishes later.
+Homebrew 6 asks you to approve a tap when you add it first. Answering that
+prompt covers Clipper, and `brew trust desert-ant-labs/tap` covers
+anything Desert Ant publishes later.
 
 Or download the [disk image](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest)
 and drag Clipper to Applications. Clipper works on macOS 26 or later on Apple
