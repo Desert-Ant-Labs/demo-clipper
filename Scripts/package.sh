@@ -28,8 +28,21 @@ mkdir -p "$DIST_DIR"
 
 # A Developer ID certificate is what lets this open on a machine that has never
 # seen it. Without one the build is still signed, but only to itself.
-IDENTITY=$(security find-identity -v -p codesigning 2>/dev/null \
-    | grep "Developer ID Application" | head -1 | sed -E 's/.*"(.*)"/\1/' || true)
+#
+# Releases are signed by Desert Ant Labs and nobody else. A keychain can hold
+# other teams' Developer ID certificates, so the identity is named rather than
+# taken from the top of the list. When it is set and missing, or expired, this
+# stops instead of quietly building something that is not notarized.
+SIGNING_IDENTITY="${CLIPPER_SIGNING_IDENTITY-Developer ID Application: Desert Ant Labs B.V. (Q32R58ALD2)}"
+IDENTITY=""
+if [ -n "$SIGNING_IDENTITY" ]; then
+    security find-identity -v -p codesigning 2>/dev/null | grep -qF "\"$SIGNING_IDENTITY\"" || {
+        echo "No valid \"$SIGNING_IDENTITY\" in the keychain."
+        echo "Install it, or set CLIPPER_SIGNING_IDENTITY= (empty) to build without one."
+        exit 1
+    }
+    IDENTITY="$SIGNING_IDENTITY"
+fi
 
 case "$INPUT" in
 "--xcode")

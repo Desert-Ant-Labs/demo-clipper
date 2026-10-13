@@ -142,11 +142,12 @@ core's `MLX` trait, which an Xcode project cannot declare on its own.
 To sign with your own certificate, run `mise set --file mise.local.toml
 CLIPPER_TEAM_ID=XXXXXXXXXX`. Left alone, a build is signed to this machine.
 
-`mise run package` wraps a Release build in a disk image. With a Developer ID
-certificate in your keychain it signs with it, and with
-`NOTARY_PROFILE=<name>` it notarizes and staples too, so the image opens on a
-machine that has never seen it. Without either it still builds, and says which
-of the two it did not do.
+`mise run package` wraps a Release build in a disk image, signed with the
+Desert Ant Labs Developer ID certificate, and with `NOTARY_PROFILE=<name>` it
+notarizes and staples too, so the image opens on a machine that has never seen
+it. Without that certificate in your keychain it stops. To package with another
+one, set `CLIPPER_SIGNING_IDENTITY` to its name, or leave it empty to build
+without one, and the script says what it did not do.
 
 ## License
 
