@@ -74,6 +74,18 @@ esac
 
 [ -d "$APP" ] || { echo "No app at $APP"; exit 1; }
 
+# Sparkle's helpers need our signature for notarization.
+SPARKLE="$APP/Contents/Frameworks/Sparkle.framework"
+if [ -d "$SPARKLE" ] && [ -n "$IDENTITY" ] && ! xcrun stapler validate "$APP" >/dev/null 2>&1; then
+    SIGN=(codesign -f -s "$IDENTITY" -o runtime --timestamp)
+    "${SIGN[@]}" "$SPARKLE/Versions/B/XPCServices/Installer.xpc"
+    "${SIGN[@]}" --preserve-metadata=entitlements "$SPARKLE/Versions/B/XPCServices/Downloader.xpc"
+    "${SIGN[@]}" "$SPARKLE/Versions/B/Autoupdate"
+    "${SIGN[@]}" "$SPARKLE/Versions/B/Updater.app"
+    "${SIGN[@]}" "$SPARKLE"
+    "${SIGN[@]}" --preserve-metadata=entitlements "$APP"
+fi
+
 VERSION=$(/usr/libexec/PlistBuddy -c "Print CFBundleShortVersionString" "$APP/Contents/Info.plist")
 DMG="$DIST_DIR/$APP_NAME-$VERSION.dmg"
 
@@ -105,8 +117,30 @@ rm -f "$DMG"
 hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" \
     -ov -format UDZO "$DMG" >/dev/null
 
+# The appcast, signed with SPARKLE_KEY_COMMAND's key or the login keychain's.
+GENERATE_APPCAST=$(find build ~/Library/Developer/Xcode/DerivedData \
+    -path "*/sparkle/Sparkle/bin/generate_appcast" 2>/dev/null | head -1)
+rm -f "$DIST_DIR/appcast.xml"
+if [ -n "$GENERATE_APPCAST" ] && [ -n "$SIGNING" ]; then
+    echo "==> Writing the appcast"
+    FEED=$(mktemp -d)
+    cp "$DMG" "$FEED/"
+    RELEASE="https://github.com/Desert-Ant-Labs/demo-clipper/releases"
+    APPCAST=(--download-url-prefix "$RELEASE/download/v$VERSION/"
+             --full-release-notes-url "$RELEASE/tag/v$VERSION"
+             -o "$DIST_DIR/appcast.xml" "$FEED")
+    if [ -n "${SPARKLE_KEY_COMMAND:-}" ] && KEY=$(eval "$SPARKLE_KEY_COMMAND"); then
+        printf '%s' "$KEY" | "$GENERATE_APPCAST" --ed-key-file - "${APPCAST[@]}" >/dev/null
+        unset KEY
+    else
+        "$GENERATE_APPCAST" --account desert-ant-labs "${APPCAST[@]}" >/dev/null
+    fi
+    rm -rf "$FEED"
+fi
+
 echo
 echo "$DMG  ($(du -h "$DMG" | cut -f1))"
+[ -f "$DIST_DIR/appcast.xml" ] && echo "$DIST_DIR/appcast.xml"
 codesign -dvv "$APP" 2>&1 | grep -E "^Authority|^Signature" | sed 's/^/    /' || true
 
 VERDICT=$(spctl -a -t exec -vv "$APP" 2>&1 | grep "accepted" || true)
