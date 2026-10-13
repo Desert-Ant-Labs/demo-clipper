@@ -1,3 +1,5 @@
+<img src="docs/banner.png" width="1280" alt="Clipper for Mac: Build your own on-device clipping studio. Unlimited clips, no inference costs.">
+
 # Clipper
 
 Generate short clips from a video podcast, meeting recording, or longer
