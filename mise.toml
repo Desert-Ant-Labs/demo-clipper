@@ -2,6 +2,7 @@
 experimental = true
 
 [tools]
+"pipx:dmgbuild" = "1.6.7"
 xcodegen = '2.45.3'
 
 [tasks.models]

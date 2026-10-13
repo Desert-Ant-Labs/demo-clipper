@@ -60,8 +60,8 @@ targets:
       properties:
         CFBundleDisplayName: Clipper
         NSHumanReadableCopyright: © 2026 Desert Ant Labs B.V. Clipper is MIT licensed. The models are under the Desert Ant Labs Source-Available License.
-        CFBundleShortVersionString: "1.0.7"
-        CFBundleVersion: "8"
+        CFBundleShortVersionString: "1.0.8"
+        CFBundleVersion: "9"
         LSMinimumSystemVersion: "26.0"
         LSApplicationCategoryType: public.app-category.utilities
         SUFeedURL: https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest/download/appcast.xml

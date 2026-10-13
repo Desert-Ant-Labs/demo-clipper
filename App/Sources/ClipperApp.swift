@@ -32,6 +32,7 @@ struct ClipperApp: App {
             // The brand accent: ink in light, cream in dark, like the mark.
             .tint(DA.Color.accent)
             .environment(warmup)
+            .task { MoveToApplications.offer() }
             .task { warmup.warm() }
     }
 }

@@ -108,14 +108,9 @@ elif [ -n "$NOTARY_PROFILE" ] && [ -n "$SIGNING" ]; then
 fi
 
 echo "==> Building the disk image"
-STAGE=$(mktemp -d)
-trap 'rm -rf "$STAGE"' EXIT
-cp -R "$APP" "$STAGE/"
-ln -s /Applications "$STAGE/Applications"
-
 rm -f "$DMG"
-hdiutil create -volname "$APP_NAME" -srcfolder "$STAGE" \
-    -ov -format UDZO "$DMG" >/dev/null
+dmgbuild -s Scripts/dmg/settings.py -D app="$APP" \
+    -D background=Scripts/dmg/background.tiff "$APP_NAME" "$DMG" >/dev/null
 
 # The appcast, signed with SPARKLE_KEY_COMMAND's key or the login keychain's.
 GENERATE_APPCAST=$(find build ~/Library/Developer/Xcode/DerivedData \
