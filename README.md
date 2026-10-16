@@ -4,14 +4,19 @@
 
 Generate short clips from a video podcast, meeting recording, or longer
 recording, fully on device. A local macOS app and a command-line tool over the
-same core.
+same core. Download the
+[latest release](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest)
+for macOS 26 or later on Apple Silicon.
 
 ![The Clipper app: the clip list, the preview, the transcript and the timeline](docs/clipper.png)
 
 ## Download
 
-Homebrew is the one to use, because `brew upgrade` moves you to the next
-release:
+Download the [disk image](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest),
+open it, and drag Clipper to Applications. Clipper works on macOS 26 or later
+on Apple Silicon.
+
+Or install Clipper with Homebrew:
 
 ```bash
 brew tap desert-ant-labs/tap
@@ -21,10 +26,6 @@ brew install --cask clipper
 Homebrew 6 asks you to approve a tap when you add it first. Answering that
 prompt covers Clipper, and `brew trust desert-ant-labs/tap` covers
 anything Desert Ant publishes later.
-
-Or download the [disk image](https://github.com/Desert-Ant-Labs/demo-clipper/releases/latest)
-and drag Clipper to Applications. Clipper works on macOS 26 or later on Apple
-Silicon.
 
 The three models come off Hugging Face on first run and are cached for every
 run after: Voz is 466MB, Title 280MB, Clips 275MB. Nothing is uploaded and
