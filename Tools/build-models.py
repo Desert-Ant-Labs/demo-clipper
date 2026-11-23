@@ -53,7 +53,7 @@ TITLE_REPO = "desert-ant-labs/title"
 #: different weights than the SDK declares is a bug that looks like a model
 #: regression.
 REVISION = "v0.1.0"
-VOZ_REVISION = "v0.3.0"
+VOZ_REVISION = "v0.5.0"
 TITLE_REVISION = "v0.1.0"
 CORE = Path(__file__).resolve().parent.parent.parent / "desert-ant-core"
 
@@ -96,7 +96,7 @@ def fetch_voz(destination: Path) -> None:
     except ImportError:
         sys.exit("huggingface_hub is not installed: pip install huggingface_hub")
     check_revision(CORE / "Sources/Voz/Catalog.swift", VOZ_REVISION)
-    print(f"Voz from {VOZ_REPO} at {VOZ_REVISION} (~489 MB)")
+    print(f"Voz from {VOZ_REPO} at {VOZ_REVISION} (~337 MB)")
     os.environ.pop("HF_TOKEN", None)
     snapshot = Path(snapshot_download(
         VOZ_REPO, revision=VOZ_REVISION,
