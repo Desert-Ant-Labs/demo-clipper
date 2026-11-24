@@ -155,10 +155,10 @@ without one, and the script says what it did not do.
 Clipper's source is MIT. See [`LICENSE`](LICENSE).
 
 The models are licensed separately, under the [Desert Ant Labs Source-Available
-License 1.0](https://license.desertant.com/1.0). You can ship them free below
-100,000 monthly active devices per platform for each model, you credit Desert
-Ant Labs, and you may not train a competing on-device model from the models,
-their outputs, or their logs. Attribution guidance at
+License](https://license.desertant.com/). They are free for most apps, and a
+commercial license is required at scale. You credit Desert Ant Labs, and you may
+not train a competing on-device model from the models, their outputs, or their
+logs. Attribution guidance at
 <https://license.desertant.com/attribution>, commercial licensing at
 <licensing@desertant.com>.
 

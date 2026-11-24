@@ -5,13 +5,13 @@ repository only. Everything listed below carries its own terms.
 
 ## Desert Ant Labs models and SDKs
 
-Licensed under the **Desert Ant Labs Source-Available License, Version 1.0**.
-Authoritative terms: **<https://license.desertant.com/1.0>** (machine-readable at
-<https://license.desertant.com/1.0.txt>). Copyright © 2026 Desert Ant Labs B.V.
-`SPDX-License-Identifier: LicenseRef-DAL-Source-Available-1.0`
+Licensed under the **Desert Ant Labs Source-Available License**.
+Authoritative terms: **<https://license.desertant.com/>** (machine-readable at
+<https://license.desertant.com/latest.txt>). Copyright © 2026 Desert Ant Labs B.V.
+`SPDX-License-Identifier: LicenseRef-DAL-Source-Available`
 
-In short: free below **100,000 monthly active devices per platform, per model**;
-above that a commercial license is required (<licensing@desertant.com>). You may
+In short: free for most apps, and a commercial license is required at scale
+(<licensing@desertant.com>). You may
 embed the models in your application. You may **not** use the models, their
 outputs, or their logs to train a competing on-device model. Apps that ship them
 must credit Desert Ant Labs (<https://license.desertant.com/attribution>).
